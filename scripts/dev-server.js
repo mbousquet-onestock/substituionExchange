@@ -13,8 +13,9 @@ const PUBLIC_DIR = path.join(ROOT, "public");
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon" };
 const API = {
   "/api/proxy": require("../api/proxy"),
-  "/api/config": require("../api/config"),
-  "/api/logs": require("../api/logs"),
+  "/api/settings": require("../api/settings"),
+  "/api/admin/config": require("../api/admin/config"),
+  "/api/admin/logs": require("../api/admin/logs"),
 };
 
 function serveStatic(req, res) {

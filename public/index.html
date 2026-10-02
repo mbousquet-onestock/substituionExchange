@@ -82,100 +82,21 @@
     button.primary { background: var(--text); border-color: var(--text); color: #fff; }
     button.primary:hover { background: #374151; }
     .loading { color: var(--muted); padding: 24px 0; text-align: center; }
-    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-    .tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); }
-    .tab:hover { background: none; color: var(--text); }
-    .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--text); }
-    .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #d97706; margin-left: 6px; vertical-align: middle; }
-    .dot[hidden] { display: none; }
-    .config h2 { font-size: 15px; margin: 0 0 8px; }
-    .config section + section { margin-top: 24px; }
-    .config label { display: block; font-weight: 600; margin-bottom: 4px; }
-    .config .hint { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
-    .config input { width: 100%; font: 13px ui-monospace, Menlo, Consolas, monospace; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; }
-    .config .row { display: flex; gap: 8px; align-items: center; }
-    .config .row input { flex: 1; min-width: 0; }
-    .config .buttons { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
-    .config .saved { color: #1f8a4c; font-size: 13px; }
-    .notice { background: #fdf1e3; color: #8a4b08; border-radius: 4px; padding: 8px 12px; margin: 0 0 12px; font-size: 13px; }
-    .notice[hidden] { display: none; }
-    .token-state { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
-    .token-state code { color: var(--text); }
-    .logs-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .logs-head h2 { flex: 1; margin: 0; }
-    .logs { border: 1px solid var(--border); border-radius: 6px; max-height: 360px; overflow: auto; }
-    .log { border-bottom: 1px solid var(--panel); }
-    .log:last-child { border-bottom: 0; }
-    .log summary { display: flex; gap: 8px; align-items: center; padding: 8px 10px; cursor: pointer; list-style: none; font-size: 13px; }
-    .log summary::-webkit-details-marker { display: none; }
-    .log .time { color: var(--muted); flex: none; font-variant-numeric: tabular-nums; }
-    .log .method { flex: none; font-weight: 600; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
-    .log .url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
-    .log .status { flex: none; font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 999px; }
-    .status.ok { background: #e7f6ec; color: #1f8a4c; }
-    .status.ko { background: #fdecea; color: #c0362c; }
-    .log .dur { flex: none; color: var(--muted); font-size: 12px; min-width: 52px; text-align: right; }
-    .log pre { margin: 0 10px 10px; background: #0f172a; color: #e2e8f0; padding: 8px 10px; border-radius: 4px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 240px; overflow: auto; }
-    .log .label { margin: 4px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
     @media (max-width: 480px) {
       .item { flex-wrap: wrap; }
       .info { flex-basis: calc(100% - 60px); }
       .badge { margin-left: 60px; }
-      .log .time { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="tabs" role="tablist">
-    <button class="tab" type="button" role="tab" id="tab-items" aria-controls="panel-items" aria-selected="true">Articles</button>
-    <button class="tab" type="button" role="tab" id="tab-config" aria-controls="panel-config" aria-selected="false">Config<span id="token-dot" class="dot" title="Aucun token enregistré" hidden></span></button>
-  </div>
-
-  <div id="panel-items" role="tabpanel">
+  <div id="panel-items">
     <div class="stepper" id="stepper">
       <div class="step" data-step="0"><span class="circle"></span>Articles</div>
       <div class="step" data-step="1"><span class="circle"></span>Substitution</div>
       <div class="step" data-step="2"><span class="circle"></span>Validation</div>
     </div>
     <div id="orders"><div class="loading">Chargement des articles…</div></div>
-  </div>
-
-  <div id="panel-config" class="config" role="tabpanel" hidden>
-    <p id="config-notice" class="notice" role="alert" hidden></p>
-
-    <section>
-      <h2>Connexion à l'API OneStock</h2>
-      <form id="token-form" autocomplete="off">
-        <label for="api-root">Route de l'API</label>
-        <div class="row">
-          <input id="api-root" type="url" spellcheck="false" placeholder="https://api-qualif.onestock-retail.com">
-          <button id="reset-root" type="button">Par défaut</button>
-        </div>
-        <p class="hint">Racine des appels (ex. <code>{route}/v3/orders/{id}</code>). URL https en <code>*.onestock-retail.com</code>. Par défaut : <code id="api-root-default">https://api-qualif.onestock-retail.com</code></p>
-
-        <label for="api-token">Token</label>
-        <p id="token-state" class="token-state">…</p>
-        <div class="row">
-          <input id="api-token" type="password" spellcheck="false" placeholder="Nouveau token (laisser vide pour conserver l'actuel)">
-          <button id="toggle-token" type="button">Afficher</button>
-        </div>
-        <p class="hint">Route et token sont enregistrés en base de données et utilisés par le proxy pour tous les appels aux API OneStock. Le token n'est jamais renvoyé au navigateur.</p>
-        <div class="buttons">
-          <button class="primary" type="submit">Enregistrer et recharger</button>
-          <button id="clear-token" type="button">Supprimer le token</button>
-          <span id="saved" class="saved" role="status"></span>
-        </div>
-      </form>
-    </section>
-
-    <section>
-      <div class="logs-head">
-        <h2>Appels API OneStock</h2>
-        <button id="refresh-logs" class="small" type="button">Rafraîchir</button>
-        <button id="clear-logs" class="small" type="button">Vider</button>
-      </div>
-      <div id="logs" class="logs"><div class="empty">Chargement…</div></div>
-    </section>
   </div>
 
   <div class="footer">
@@ -200,7 +121,7 @@
         substitution: ["substitution", "substitutions", "sustitution"]
       };
       var SEARCH_LIMIT = 10;
-      // Langue de repli pour les fiches articles
+      // Langue de repli pour les fiches articles (langue par défaut du site, configurée dans /config.html)
       var FALLBACK_LANG = "fr";
       // Fiches articles (via le proxy générique) ; les commandes passent par le proxy dédié /api/orders/{id}
       var ITEMS_API = "/v2/items";
@@ -251,7 +172,7 @@
       // Contrôle du statut renvoyé par OneStock à travers le proxy
       function checkOneStock(path) {
         return function (r) {
-          if (r.status === 401) throw Object.assign(new Error("Token refusé par OneStock (401) : vérifiez le token dans l'onglet Config"), { auth: true });
+          if (r.status === 401) throw Object.assign(new Error("Token refusé par OneStock (401) : vérifiez le token du site dans la page de configuration (/config.html)"), { auth: true });
           if (r.status < 200 || r.status >= 300) {
             var msg = r.data && (r.data.message || r.data.error || r.data.raw);
             throw new Error("OneStock " + path + " : " + r.status + (msg ? " " + (typeof msg === "string" ? msg : JSON.stringify(msg)) : ""));
@@ -411,9 +332,7 @@
         Promise.all(orderIds.map(loadOrder)).then(function (orders) {
           wizard = { step: 0, orders: orders, selected: {}, replacements: {}, candidates: {}, results: {}, validated: false };
           render();
-          var authError = orders.filter(function (o) { return o.auth; })[0];
-          if (authError) showConfig(authError.error);
-          if (!panels.config.hidden) loadLogs();
+
         });
       }
 
@@ -723,126 +642,6 @@
         render();
       });
 
-      // ---------- Onglets ----------
-
-      var panels = { items: document.getElementById("panel-items"), config: document.getElementById("panel-config") };
-
-      function selectTab(name) {
-        ["items", "config"].forEach(function (n) {
-          document.getElementById("tab-" + n).setAttribute("aria-selected", String(n === name));
-          panels[n].hidden = n !== name;
-        });
-        document.getElementById("back").style.visibility = name === "items" ? "" : "hidden";
-        document.getElementById("next").style.visibility = name === "items" ? "" : "hidden";
-        if (name === "config") { loadTokenState(); loadLogs(); }
-        resize();
-      }
-      function showConfig(message) {
-        var notice = document.getElementById("config-notice");
-        notice.textContent = message || "";
-        notice.hidden = !message;
-        selectTab("config");
-      }
-      document.getElementById("tab-items").addEventListener("click", function () { selectTab("items"); });
-      document.getElementById("tab-config").addEventListener("click", function () { selectTab("config"); });
-
-      // ---------- Config : route de l'API et token ----------
-
-      function showTokenState(state) {
-        if (state.api_root) document.getElementById("api-root").value = state.api_root;
-        if (state.api_root_default) {
-          document.getElementById("api-root").placeholder = state.api_root_default;
-          document.getElementById("api-root-default").textContent = state.api_root_default;
-        }
-        var p = document.getElementById("token-state");
-        p.innerHTML = "";
-        if (state.token_set) {
-          p.appendChild(document.createTextNode("Token enregistré : "));
-          p.appendChild(el("code", null, state.token_preview));
-          if (state.updated_at) p.appendChild(document.createTextNode(" — mis à jour le " + new Date(state.updated_at).toLocaleString(locale)));
-        } else {
-          p.textContent = "Aucun token enregistré.";
-        }
-        document.getElementById("token-dot").hidden = !!state.token_set;
-      }
-
-      function loadTokenState() {
-        return post("api/config", { action: "get" }).then(showTokenState)
-          .catch(function (e) { document.getElementById("token-state").textContent = "Erreur : " + e.message; });
-      }
-
-      // changes : { token?, api_root? } — seuls les champs présents sont modifiés
-      function saveConfig(changes, message) {
-        return post("api/config", Object.assign({ action: "set" }, changes)).then(function (state) {
-          showTokenState(state);
-          document.getElementById("api-token").value = "";
-          document.getElementById("config-notice").hidden = true;
-          var saved = document.getElementById("saved");
-          saved.textContent = message;
-          setTimeout(function () { saved.textContent = ""; }, 2500);
-        }).catch(function (e) { showConfig(e.message); throw e; });
-      }
-
-      document.getElementById("token-form").addEventListener("submit", function (e) {
-        e.preventDefault();
-        var changes = { api_root: document.getElementById("api-root").value.trim() };
-        var token = document.getElementById("api-token").value.trim();
-        if (token) changes.token = token;
-        saveConfig(changes, "Configuration enregistrée").then(function () { selectTab("items"); loadItems(); }, function () {});
-      });
-      document.getElementById("clear-token").addEventListener("click", function () {
-        saveConfig({ token: "" }, "Token supprimé").catch(function () {});
-      });
-      document.getElementById("reset-root").addEventListener("click", function () {
-        saveConfig({ api_root: "" }, "Route par défaut rétablie").catch(function () {});
-      });
-      document.getElementById("toggle-token").addEventListener("click", function () {
-        var input = document.getElementById("api-token");
-        var show = input.type === "password";
-        input.type = show ? "text" : "password";
-        this.textContent = show ? "Masquer" : "Afficher";
-      });
-
-      // ---------- Config : journal des appels API ----------
-
-      function renderLogs(logs) {
-        var box = document.getElementById("logs");
-        box.innerHTML = "";
-        if (!logs.length) { box.appendChild(el("div", "empty", "Aucun appel enregistré")); resize(); return; }
-        logs.forEach(function (log) {
-          var d = el("details", "log");
-          var s = el("summary");
-          s.appendChild(el("span", "time", new Date(log.created_at).toLocaleTimeString(locale)));
-          s.appendChild(el("span", "method", log.method));
-          s.appendChild(el("span", "url", log.url));
-          var ok = log.status >= 200 && log.status < 300;
-          s.appendChild(el("span", "status " + (ok ? "ok" : "ko"), log.status ? String(log.status) : "ERR"));
-          s.appendChild(el("span", "dur", log.duration_ms != null ? log.duration_ms + " ms" : ""));
-          d.appendChild(s);
-          if (log.error) { d.appendChild(el("div", "label", "Erreur")); d.appendChild(el("pre", null, log.error)); }
-          d.appendChild(el("div", "label", "Requête"));
-          d.appendChild(el("pre", null, JSON.stringify(log.request, null, 2)));
-          if (log.response != null) {
-            var resp = log.response;
-            try { resp = JSON.stringify(JSON.parse(resp), null, 2); } catch (e) {}
-            d.appendChild(el("div", "label", "Réponse"));
-            d.appendChild(el("pre", null, resp));
-          }
-          d.addEventListener("toggle", resize);
-          box.appendChild(d);
-        });
-        resize();
-      }
-
-      function loadLogs() {
-        return post("api/logs", { action: "list", limit: 100 }).then(function (data) { renderLogs(data.logs); })
-          .catch(function (e) { document.getElementById("logs").innerHTML = ""; document.getElementById("logs").appendChild(el("div", "empty", "Erreur : " + e.message)); });
-      }
-      document.getElementById("refresh-logs").addEventListener("click", loadLogs);
-      document.getElementById("clear-logs").addEventListener("click", function () {
-        post("api/logs", { action: "clear" }).then(function (data) { renderLogs(data.logs); }).catch(function (e) { showConfig(e.message); });
-      });
-
       // ---------- Communication avec OneStock (iframe) ----------
 
       function resize() {
@@ -856,8 +655,10 @@
         // Numéro de commande : order_id (une commande), ou order_ids (plusieurs, séparées par des virgules)
         var raw = shared.order_id || shared.order_ids || params.get("order_id") || params.get("order_ids");
         orderIds = (Array.isArray(raw) ? raw : String(raw || "").split(",")).map(function (s) { return String(s).trim(); }).filter(Boolean);
-        loadTokenState();
-        loadItems();
+        // Langue par défaut du site, puis chargement des articles
+        get("api/settings", {}).then(function (cfg) {
+          if (cfg && cfg.default_lang) FALLBACK_LANG = cfg.default_lang;
+        }, function () {}).then(loadItems);
       });
 
       document.getElementById("close").addEventListener("click", function () {
