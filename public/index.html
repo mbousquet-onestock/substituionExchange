@@ -140,7 +140,10 @@
   <script>
     (function () {
       // Noms des features produit configurées sur le site OneStock
-      var FEATURES = { name: "name", image: "image_url", color: "color", size: "size" };
+      // (comparaison insensible à la casse, espaces et "_" : "Image URL" = "image_url" = "imageUrl")
+      var FEATURES = { name: "name", image: "Image URL", color: "color", size: "size" };
+      // Langue de repli pour les fiches articles
+      var FALLBACK_LANG = "fr";
       // Fiches articles (via le proxy générique) ; les commandes passent par le proxy dédié /api/orders/{id}
       var ITEMS_API = "/v2/items";
 
@@ -213,24 +216,41 @@
 
       function first(v) { return Array.isArray(v) ? v[0] : v; }
 
-      // Fiches articles -> { item_id: features }
+      // Fiches articles (GET /v2/items) -> { item_id: { langue: features } }
+      // Sans "lang" ni "features", l'API renvoie les features de toutes les langues.
       function fetchItemSheets(itemIds) {
         var ids = itemIds.filter(function (id, i) { return id && itemIds.indexOf(id) === i; });
         if (!ids.length) return Promise.resolve({});
         return onestock(ITEMS_API, {
           item_ids: ids,
-          features: [FEATURES.name, FEATURES.image, FEATURES.color, FEATURES.size],
-          lang: lang,
           get_total: false,
           pagination: { start: 0, limit: ids.length }
         }).then(function (data) {
           var sheets = {};
-          ((data && data.items) || []).forEach(function (item) {
-            var byLang = item.features || {};
-            sheets[item.id] = byLang[lang] || byLang[Object.keys(byLang)[0]] || {};
-          });
+          ((data && data.items) || []).forEach(function (item) { sheets[item.id] = item.features || {}; });
           return sheets;
         });
+      }
+
+      function normalizeKey(k) { return String(k).toLowerCase().replace(/[^a-z0-9]/g, ""); }
+
+      // Valeur d'une feature dans un objet { nom: [valeurs] }, nom comparé sans casse ni séparateurs
+      function featureIn(features, name) {
+        var wanted = normalizeKey(name);
+        var keys = Object.keys(features || {});
+        for (var i = 0; i < keys.length; i++) {
+          if (normalizeKey(keys[i]) === wanted) {
+            var v = first(features[keys[i]]);
+            if (v !== undefined && v !== null && v !== "") return v;
+          }
+        }
+        return null;
+      }
+
+      // Feature de la fiche article : langue du contexte, sinon langue de repli (fr)
+      function sheetFeature(byLang, name) {
+        if (!byLang) return null;
+        return featureIn(byLang[lang], name) || featureIn(byLang[FALLBACK_LANG], name);
       }
 
       // Une ligne par line_item_group (quantité + état), prix de l'order_item, image de la fiche article
@@ -243,15 +263,16 @@
 
         return groups.map(function (g) {
           var oi = byId[g.order_item_id] || orderItems.filter(function (o) { return o.item_id === g.item_id; })[0] || {};
-          var sheet = sheets[g.item_id] || {};
-          var features = Object.assign({}, sheet, (oi.item && oi.item.features) || {}, (g.item && g.item.features) || {});
+          var sheet = sheets[g.item_id];
+          var features = Object.assign({}, (oi.item && oi.item.features) || {}, (g.item && g.item.features) || {});
           var pricing = oi.pricing_details || {};
+          function value(name) { return featureIn(features, name) || sheetFeature(sheet, name); }
           return {
             item_id: g.item_id,
-            name: first(features[FEATURES.name]) || g.item_id,
-            image: first(sheet[FEATURES.image]) || null,
-            color: first(features[FEATURES.color]) || null,
-            size: first(features[FEATURES.size]) || null,
+            name: value(FEATURES.name) || g.item_id,
+            image: sheetFeature(sheet, FEATURES.image),
+            color: value(FEATURES.color),
+            size: value(FEATURES.size),
             unit_price: pricing.unit_price,
             currency: pricing.currency,
             quantity: g.quantity,

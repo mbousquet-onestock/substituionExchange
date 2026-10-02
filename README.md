@@ -28,7 +28,10 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
    - **journalise l'appel en base** (URL, requête avec token masqué, statut, durée, réponse ou erreur).
 3. Appels effectués :
    - `GET /v3/orders/{id}` : `order_items.*`, `line_item_groups.*` ;
-   - `GET /v2/items` avec `item_ids` : fiche article, d'où vient l'URL de l'image.
+   - `GET /v2/items` avec `item_ids` (sans `lang` ni `features` → toutes les langues) : fiche article.
+     L'URL de l'image est lue dans la feature **Image URL** (nom comparé sans casse ni séparateurs :
+     `Image URL`, `image_url`, `imageUrl`…) dans la langue du contexte, sinon en **fr**.
+     Nom, couleur et taille absents de la commande sont complétés de la même façon.
 
 ## Onglet Config
 
@@ -58,7 +61,7 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 | `ONESTOCK_GET_TRANSPORT` | `xget` (défaut) ou `override` (`POST` + `X-HTTP-Method-Override: GET`) |
 | `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |
 
-Les noms des features produit (`name`, `image_url`, `color`, `size`) sont en tête du script de `public/index.html`.
+Les noms des features produit (`name`, `Image URL`, `color`, `size`) et la langue de repli (`fr`) sont en tête du script de `public/index.html`.
 
 ## Développement local
 
