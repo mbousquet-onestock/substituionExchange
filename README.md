@@ -1,54 +1,63 @@
 # Extension OneStock `bo.orders.action` – articles de la commande
 
-Pop-up ouverte depuis la liste des commandes du back-office OneStock. Elle reçoit
-le contexte (`order_ids`, `extension_signature`…) par `postMessage`, puis affiche
-les articles de chaque commande (image, nom, prix | couleur | taille, référence,
-état du line item group, quantité).
+Pop-up ouverte depuis la liste des commandes du back-office OneStock. Elle affiche
+les articles de chaque commande sélectionnée (image, nom, prix | couleur | taille,
+référence, état, quantité). Elle est déployée sur **Vercel**.
 
-## Fonctionnement
+## Architecture
 
-1. `public/index.html` envoie `extension_ready`, reçoit `onestock_data`.
-2. Elle appelle `POST /api/orders/items` sur ce serveur avec les `order_ids`,
-   `extension_id`, `user_id` (paramètres d'URL) et `extension_signature`.
-3. `server.js` vérifie la signature (HMAC-SHA256, clés courante/précédentes), puis
-   (via `POST` + `X-HTTP-Method-Override: GET`) :
-   - `GET /v3/orders/{id}` : `order_items.*`, `line_item_groups.*` (quantité, état, prix, nom/couleur/taille) ;
-   - `GET /v2/items` avec `item_ids` : fiche article, d'où vient **l'URL de l'image**
-     (et nom/couleur/taille en repli s'ils manquent sur la commande).
+```
+public/index.html   pop-up (onglets Articles / Config)
+public/context.html affichage brut du contexte reçu de OneStock (debug)
+api/proxy.js        POST /api/proxy  : proxy vers les API OneStock
+api/config.js       POST /api/config : lecture / enregistrement du token
+api/logs.js         POST /api/logs   : journal des appels API OneStock
+lib/                base de données, client OneStock, signature
+scripts/dev-server.js  serveur local qui reproduit Vercel
+```
 
-## Token / onglet Config
+1. La pop-up envoie `extension_ready` et reçoit `onestock_data` (`order_ids`, `extension_signature`).
+2. Tous les appels aux API OneStock passent par **`/api/proxy`**. Le proxy :
+   - vérifie la signature de l'extension ;
+   - n'autorise que des routes en lecture (`GET /vX/orders/{id}`, `GET /vX/items`, `GET /vX/line_item_groups`) ;
+   - ajoute `site_id` et le **token stocké en base** au body ;
+   - appelle OneStock (méthode `XGET`, ou `POST` + `X-HTTP-Method-Override: GET`) ;
+   - **journalise l'appel en base** (URL, requête avec token masqué, statut, durée, réponse ou erreur).
+3. Appels effectués :
+   - `GET /v3/orders/{id}` : `order_items.*`, `line_item_groups.*` ;
+   - `GET /v2/items` avec `item_ids` : fiche article, d'où vient l'URL de l'image.
 
-La pop-up a deux onglets : **Articles** et **Config**. Dans **Config**, on saisit le
-token API OneStock (obtenu via `POST /login`) ; il est stocké dans le `localStorage`
-du navigateur et utilisé pour tous les appels aux API OneStock (`/v3/orders`, `/v2/items`).
-Une pastille orange sur l'onglet signale qu'aucun token n'est saisi ; si le token
-manque ou est refusé (401), la pop-up bascule automatiquement sur l'onglet Config.
+## Onglet Config
 
-- Token saisi → utilisé tel quel (erreur « Token invalide ou expiré » si 401).
-- Pas de token → le serveur se connecte avec `ONESTOCK_USER` / `ONESTOCK_PASSWORD` s'ils sont définis.
+- **Token API OneStock** : saisi une fois, stocké en base (table `settings`), utilisé
+  pour tous les appels. Il n'est jamais renvoyé au navigateur (seul un aperçu `abcd…wxyz` est affiché).
+- **Appels API OneStock** : les 100 derniers appels (500 conservés en base), avec
+  le détail requête / réponse au clic. Boutons Rafraîchir et Vider.
 
-`public/context.html` affiche le contexte brut reçu de OneStock (debug).
+Si le token manque ou est refusé (401), la pop-up bascule sur l'onglet Config.
 
-## Configuration (variables d'environnement)
+## Base de données (Vercel)
+
+Vercel → projet → **Storage** → créer une base **Postgres (Neon)** et la connecter au projet :
+la variable `POSTGRES_URL` (ou `DATABASE_URL`) est ajoutée automatiquement.
+Les tables `settings` et `api_logs` sont créées au premier appel.
+
+## Variables d'environnement
 
 | Variable | Description |
 |---|---|
+| `POSTGRES_URL` / `DATABASE_URL` | connexion Postgres (fournie par Vercel Storage) |
 | `ONESTOCK_SITE_ID` | ex. `c00`. Si absent, le `site_id` transmis par OneStock dans l'URL est utilisé |
-| `ONESTOCK_USER` / `ONESTOCK_PASSWORD` | identifiants API (optionnels si le token est saisi dans l'onglet Config) |
 | `ONESTOCK_ENV` | `qualif` (défaut) ou `prod` |
 | `ONESTOCK_API_ROOT` | racine de l'API sans version, remplace l'URL calculée (`https://{site_id}.api.[qualif.]onestock-retail.com`) |
-| `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée (dev uniquement) |
-| `FEATURE_NAME`, `FEATURE_IMAGE`, `FEATURE_COLOR`, `FEATURE_SIZE` | noms des features produit (défauts `name`, `image_url`, `color`, `size`) |
-| `PORT` | défaut `3000` |
-| `ONESTOCK_MOCK=1` | renvoie des données factices sans appeler OneStock |
+| `ONESTOCK_GET_TRANSPORT` | `xget` (défaut) ou `override` (`POST` + `X-HTTP-Method-Override: GET`) |
+| `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |
 
-## Lancer
+Les noms des features produit (`name`, `image_url`, `color`, `size`) sont en tête du script de `public/index.html`.
+
+## Développement local
 
 ```bash
-npm run mock           # données factices
-EXTENSION_SECRET_KEYS=... npm start                       # token saisi dans l'onglet Config
-ONESTOCK_SITE_ID=c00 ONESTOCK_USER=... ONESTOCK_PASSWORD=... EXTENSION_SECRET_KEYS=... npm start
+npm install
+POSTGRES_URL=postgres://user@localhost:5432/db npm run dev
 ```
-
-Déployer derrière une URL HTTPS publique et déclarer cette URL comme extension
-sur le point d'injection `bo.orders.action`.

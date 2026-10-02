@@ -1,12 +1,15 @@
 {
   "name": "substitution-exchange-extension",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "OneStock UI extension (bo.orders.action) displaying the items of the selected orders",
-  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "mock": "ONESTOCK_MOCK=1 node server.js"
+    "dev": "node scripts/dev-server.js"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
 }
