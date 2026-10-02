@@ -52,7 +52,8 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
 
 ## Traductions
 
-Les textes des pages sont dans `public/i18n.js` (fr, en, es, it, de ; libellés des états OneStock inclus).
+Les textes **statiques** des pages sont dans `public/i18n.js` (fr, en, es, it, de). Les données récupérées
+de OneStock (états des lignes, noms, couleurs…) sont affichées telles quelles, sans traduction.
 - **Pop-up** : langue du contexte OneStock (paramètre d'URL `lang`, sinon `locale`, sinon navigateur).
 - **Page de configuration** : `?lang=` si fourni, sinon langue du navigateur.
 - Langue non traduite → anglais ; clé absente d'une langue → anglais puis français.

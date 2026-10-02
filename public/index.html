@@ -27,7 +27,7 @@
     .details { font-size: 15px; }
     .sku { color: var(--muted); font-size: 13px; }
     .name, .details, .sku { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .badge { flex: none; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #eef0f3; color: #4b5563; text-transform: uppercase; letter-spacing: .03em; }
+    .badge { flex: none; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #eef0f3; color: #4b5563; }
     .badge.teal { background: #e6f6f4; color: #23a597; }
     .badge.green { background: #e7f6ec; color: #1f8a4c; }
     .badge.orange { background: #fdf1e3; color: #b8650b; }
@@ -357,9 +357,6 @@
         return n;
       }
       function icon(id) { return document.getElementById(id).content.firstElementChild.cloneNode(true); }
-      function capitalize(s) { s = String(s).replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); }
-      // Libellé traduit de l'état OneStock (valeur brute si non traduite)
-      function stateLabel(state) { var k = "state." + state; var v = t(k); return v === k ? capitalize(state) : v; }
       function placeholder() { var ph = el("div", "thumb"); ph.appendChild(icon("icon-box")); return ph; }
 
       function formatPrice(amount, currency) {
@@ -387,7 +384,7 @@
         if (details) info.appendChild(el("div", "details", details));
         info.appendChild(el("div", "sku", item.item_id));
         row.appendChild(info);
-        if (opts.badge !== false && item.state) row.appendChild(el("span", "badge " + (STATE_COLORS[item.state] || ""), stateLabel(item.state)));
+        if (opts.badge !== false && item.state) row.appendChild(el("span", "badge " + (STATE_COLORS[item.state] || ""), String(item.state)));
         if (opts.qty !== false && item.quantity != null) row.appendChild(el("div", "qty", t("qty", { n: item.quantity })));
         if (opts.check) row.appendChild(el("span", "check" + (opts.check === "radio" ? " radio" : ""), ""));
         return row;
