@@ -4,7 +4,8 @@
 // { action: "sites" }                                -> { sites: [{ site_id, updated_at }] }
 // { action: "get", site_id }                          -> configuration du site
 // { action: "set", site_id, token?, api_root?, default_lang? }
-//   valeur vide = suppression (le site reprend la valeur commune, puis la valeur par défaut)
+//   route / langue vides = retour à la valeur commune, puis par défaut (enregistrée pour le site) ;
+//   token vide = suppression
 // site_id "" = valeurs communes à tous les sites.
 
 const { adminEndpoint } = require("../../lib/http");
@@ -22,6 +23,8 @@ function checkSiteId(siteId) {
 }
 
 async function describe(siteId) {
+  // Route de l'API et langue par défaut toujours présentes en base pour le site
+  await onestock.ensureSiteDefaults(siteId, true);
   const s = await db.getSiteSettings(siteId);
   const field = (f, fallback) => ({
     value: f ? f.value : fallback,

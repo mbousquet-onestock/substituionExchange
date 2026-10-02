@@ -159,11 +159,11 @@
       $("logs-card").hidden = false;
       $("settings-title").textContent = cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.common");
       $("logs-title").textContent = cfg.site_id ? t("logs.title_site", { id: cfg.site_id }) : t("logs.title_all");
-      // Les champs affichent la valeur propre au site ; la valeur héritée est en placeholder
-      $("api-root").value = cfg.api_root.source === "site" ? cfg.api_root.value : "";
-      $("api-root").placeholder = cfg.api_root.value;
-      $("default-lang").value = cfg.default_lang.source === "site" ? cfg.default_lang.value : "";
-      $("default-lang").placeholder = cfg.default_lang.value;
+      // Valeurs enregistrées pour le site (les valeurs par défaut sont en placeholder)
+      $("api-root").value = cfg.api_root.value;
+      $("api-root").placeholder = cfg.defaults.api_root;
+      $("default-lang").value = cfg.default_lang.value;
+      $("default-lang").placeholder = cfg.defaults.default_lang;
       $("hint-api-root").textContent = t("cfg.api_root_hint", { "default": cfg.defaults.api_root });
       $("hint-default-lang").textContent = t("cfg.default_lang_hint", { "default": cfg.defaults.default_lang });
       showSource("src-api-root", cfg.api_root.source);

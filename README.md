@@ -73,7 +73,10 @@ Paramètres stockés **par site** dans la table `settings` (`site_id`, `key`, `v
 | Langue par défaut (repli des fiches articles) | `default_lang` | `fr` (`DEFAULT_LANG`) |
 | Token API OneStock | `onestock_token` | — |
 
-Un site sans valeur propre utilise la **valeur commune** (`site_id` vide), puis la valeur par défaut.
+Les lignes **route de l'API** et **langue par défaut** sont créées automatiquement pour chaque site
+(première utilisation par la pop-up ou ouverture dans `/config.html`), avec la valeur commune (`site_id` vide)
+ou à défaut la valeur par défaut. Vider un de ces champs dans `/config.html` réenregistre la valeur commune / par défaut.
+Le token, lui, n'est stocké que s'il est saisi (sinon le site utilise le token commun).
 La page indique la provenance de chaque valeur (propre au site / commune / par défaut).
 Le token n'est jamais renvoyé au navigateur. L'ancienne table `settings` (sans `site_id`) est migrée
 automatiquement : ses valeurs deviennent les valeurs communes.
