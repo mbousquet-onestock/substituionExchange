@@ -9,7 +9,7 @@ const onestock = require("../../lib/onestock");
 
 module.exports = endpoint(async (params) => {
   const id = String(params.id || "").trim();
-  if (!id) return { status: 400, data: { error: "Numéro de commande manquant" } };
+  if (!id) return { status: 400, data: { error: "Numéro de commande manquant", code: "order_id_missing" } };
   const lang = /^[a-z]{2}$/i.test(params.lang || "") ? params.lang.toLowerCase() : "en";
   const result = await onestock.call({
     method: "GET",

@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Configuration OneStock</title>
+  <script src="i18n.js"></script>
   <style>
     :root { --bg: #f7f8fa; --card: #fff; --text: #1f2430; --muted: #6b7280; --border: #dfe2e7; --panel: #f3f4f6; --accent: #23a597; }
     * { box-sizing: border-box; }
@@ -57,46 +58,46 @@
 </head>
 <body>
 <main>
-  <h1>Configuration de l'extension OneStock</h1>
-  <p class="sub">Paramètres enregistrés en base par site (table <code>settings</code>) et journal des appels API.</p>
+  <h1 data-i18n="cfg.title">Configuration de l'extension OneStock</h1>
+  <p class="sub" data-i18n="cfg.subtitle">Paramètres enregistrés en base par site (table settings) et journal des appels API.</p>
   <p id="notice" class="notice" role="alert" hidden></p>
 
   <section class="card">
-    <h2>Accès</h2>
+    <h2 data-i18n="cfg.access">Accès</h2>
     <form id="access-form" autocomplete="off">
-      <label for="admin-key">Clé d'administration</label>
+      <label for="admin-key" data-i18n="cfg.admin_key">Clé d'administration</label>
       <div class="row">
         <input id="admin-key" type="password" spellcheck="false" placeholder="ADMIN_KEY">
-        <input id="site-id" list="sites" aria-label="Site ID" spellcheck="false" placeholder="Site ID (ex. c00) — vide = valeurs communes">
+        <input id="site-id" list="sites" aria-label="Site ID" spellcheck="false" data-i18n-placeholder="cfg.site_placeholder">
         <datalist id="sites"></datalist>
-        <button class="accent" type="submit">Charger</button>
+        <button class="accent" type="submit" data-i18n="cfg.load">Charger</button>
       </div>
-      <p class="hint">Les valeurs communes (site vide) s'appliquent aux sites qui n'ont pas leur propre valeur.</p>
+      <p class="hint" data-i18n="cfg.common_hint"></p>
     </form>
   </section>
 
   <section class="card" id="settings-card" hidden>
     <h2 id="settings-title">Site</h2>
     <form id="settings-form" autocomplete="off">
-      <label for="api-root">Route de l'API <span id="src-api-root" class="source"></span></label>
+      <label for="api-root"><span data-i18n="cfg.api_root">Route de l'API</span> <span id="src-api-root" class="source"></span></label>
       <input id="api-root" type="url" spellcheck="false">
-      <p class="hint">URL https en <code>*.onestock-retail.com</code>, ex. <code>{route}/v3/orders/{id}</code>. Vide = valeur commune ou par défaut (<code id="def-api-root"></code>).</p>
+      <p class="hint" id="hint-api-root"></p>
 
-      <label for="default-lang">Langue par défaut <span id="src-default-lang" class="source"></span></label>
+      <label for="default-lang"><span data-i18n="cfg.default_lang">Langue par défaut</span> <span id="src-default-lang" class="source"></span></label>
       <input id="default-lang" maxlength="2" spellcheck="false" style="max-width: 120px">
-      <p class="hint">Code à 2 lettres. Utilisée quand un champ de la fiche article est vide dans la langue du contexte. Vide = valeur commune ou par défaut (<code id="def-default-lang"></code>).</p>
+      <p class="hint" id="hint-default-lang"></p>
 
-      <label for="api-token">Token API OneStock <span id="src-token" class="source"></span></label>
+      <label for="api-token"><span data-i18n="cfg.token">Token API OneStock</span> <span id="src-token" class="source"></span></label>
       <p id="token-state" class="state"></p>
       <div class="row">
-        <input id="api-token" type="password" spellcheck="false" placeholder="Nouveau token (laisser vide pour conserver l'actuel)">
-        <button id="toggle-token" type="button">Afficher</button>
+        <input id="api-token" type="password" spellcheck="false" data-i18n-placeholder="cfg.token_placeholder">
+        <button id="toggle-token" type="button" data-i18n="cfg.show">Afficher</button>
       </div>
-      <p class="hint">Jamais renvoyé au navigateur ; utilisé par le proxy pour tous les appels aux API OneStock du site.</p>
+      <p class="hint" data-i18n="cfg.token_hint"></p>
 
       <div class="buttons">
-        <button class="accent" type="submit">Enregistrer</button>
-        <button id="clear-token" type="button">Supprimer le token du site</button>
+        <button class="accent" type="submit" data-i18n="cfg.save">Enregistrer</button>
+        <button id="clear-token" type="button" data-i18n="cfg.clear_token">Supprimer le token du site</button>
         <span id="saved" class="ok" role="status"></span>
       </div>
     </form>
@@ -104,9 +105,9 @@
 
   <section class="card" id="logs-card" hidden>
     <div class="logs-head">
-      <h2 id="logs-title">Appels API OneStock</h2>
-      <button id="refresh-logs" class="small" type="button">Rafraîchir</button>
-      <button id="clear-logs" class="small" type="button">Vider</button>
+      <h2 id="logs-title" data-i18n="logs.title">Appels API OneStock</h2>
+      <button id="refresh-logs" class="small" type="button" data-i18n="logs.refresh">Rafraîchir</button>
+      <button id="clear-logs" class="small" type="button" data-i18n="logs.clear">Vider</button>
     </div>
     <div id="logs" class="logs"></div>
   </section>
@@ -116,6 +117,11 @@
   (function () {
     var KEY_STORAGE = "onestock_admin_key";
     var siteId = "";
+    var qs = new URLSearchParams(location.search);
+    // Langue de la page : ?lang= (ex. lien depuis OneStock), sinon langue du navigateur
+    var t = I18N.create(qs.get("lang") || navigator.language);
+    document.title = t("cfg.title");
+    t.apply();
 
     function $(id) { return document.getElementById(id); }
     function el(tag, className, text) {
@@ -135,43 +141,41 @@
         headers: { "Content-Type": "application/json", "X-Admin-Key": $("admin-key").value },
         body: JSON.stringify(payload)
       }).then(function (res) {
-        return res.json().catch(function () { return { error: "Réponse invalide (" + res.status + ")" }; }).then(function (data) {
-          if (!res.ok) throw new Error(data.error || "Erreur " + res.status);
+        return res.json().catch(function () { return { error: t("err.invalid_response", { status: res.status }) }; }).then(function (data) {
+          if (!res.ok) throw new Error(t.error(data, t("err.http", { status: res.status })));
           return data;
         });
       });
     }
 
-    var SOURCES = { site: "propre au site", common: "valeur commune", default: "par défaut" };
     function showSource(id, source) {
       var n = $(id);
       n.className = "source " + (source || "");
-      n.textContent = source ? SOURCES[source] : "";
+      n.textContent = source ? t("cfg.source." + source) : "";
     }
 
     function showSettings(cfg) {
       $("settings-card").hidden = false;
       $("logs-card").hidden = false;
-      $("settings-title").textContent = cfg.site_id ? "Site " + cfg.site_id : "Valeurs communes (tous les sites)";
-      $("logs-title").textContent = "Appels API OneStock" + (cfg.site_id ? " — site " + cfg.site_id : " — tous les sites");
+      $("settings-title").textContent = cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.common");
+      $("logs-title").textContent = cfg.site_id ? t("logs.title_site", { id: cfg.site_id }) : t("logs.title_all");
       // Les champs affichent la valeur propre au site ; la valeur héritée est en placeholder
       $("api-root").value = cfg.api_root.source === "site" ? cfg.api_root.value : "";
       $("api-root").placeholder = cfg.api_root.value;
       $("default-lang").value = cfg.default_lang.source === "site" ? cfg.default_lang.value : "";
       $("default-lang").placeholder = cfg.default_lang.value;
-      $("def-api-root").textContent = cfg.defaults.api_root;
-      $("def-default-lang").textContent = cfg.defaults.default_lang;
+      $("hint-api-root").textContent = t("cfg.api_root_hint", { "default": cfg.defaults.api_root });
+      $("hint-default-lang").textContent = t("cfg.default_lang_hint", { "default": cfg.defaults.default_lang });
       showSource("src-api-root", cfg.api_root.source);
       showSource("src-default-lang", cfg.default_lang.source);
       showSource("src-token", cfg.token.set ? cfg.token.source : "");
       var st = $("token-state");
       st.innerHTML = "";
       if (cfg.token.set) {
-        st.appendChild(document.createTextNode("Token enregistré : "));
-        st.appendChild(el("code", null, cfg.token.preview));
-        if (cfg.token.updated_at) st.appendChild(document.createTextNode(" — mis à jour le " + new Date(cfg.token.updated_at).toLocaleString()));
+        st.textContent = t("cfg.token_set", { preview: cfg.token.preview }) +
+          (cfg.token.updated_at ? t("cfg.token_updated", { date: new Date(cfg.token.updated_at).toLocaleString(t.lang) }) : "");
       } else {
-        st.textContent = "Aucun token enregistré.";
+        st.textContent = t("cfg.token_none");
       }
     }
 
@@ -207,11 +211,11 @@
     function renderLogs(logs) {
       var box = $("logs");
       box.innerHTML = "";
-      if (!logs.length) { box.appendChild(el("div", "empty", "Aucun appel enregistré")); return; }
+      if (!logs.length) { box.appendChild(el("div", "empty", t("logs.none"))); return; }
       logs.forEach(function (log) {
         var d = el("details", "log");
         var s = el("summary");
-        s.appendChild(el("span", "time", new Date(log.created_at).toLocaleString()));
+        s.appendChild(el("span", "time", new Date(log.created_at).toLocaleString(t.lang)));
         if (!siteId) s.appendChild(el("span", "site", log.site_id || "—"));
         s.appendChild(el("span", "method", log.method));
         s.appendChild(el("span", "url", log.url));
@@ -219,13 +223,13 @@
         s.appendChild(el("span", "status " + (ok ? "ok" : "ko"), log.status ? String(log.status) : "ERR"));
         s.appendChild(el("span", "dur", log.duration_ms != null ? log.duration_ms + " ms" : ""));
         d.appendChild(s);
-        if (log.error) { d.appendChild(el("div", "label", "Erreur")); d.appendChild(el("pre", null, log.error)); }
-        d.appendChild(el("div", "label", "Requête"));
+        if (log.error) { d.appendChild(el("div", "label", t("logs.error"))); d.appendChild(el("pre", null, log.error)); }
+        d.appendChild(el("div", "label", t("logs.request")));
         d.appendChild(el("pre", null, JSON.stringify(log.request, null, 2)));
         if (log.response != null) {
           var resp = log.response;
           try { resp = JSON.stringify(JSON.parse(resp), null, 2); } catch (e) {}
-          d.appendChild(el("div", "label", "Réponse"));
+          d.appendChild(el("div", "label", t("logs.response")));
           d.appendChild(el("pre", null, resp));
         }
         box.appendChild(d);
@@ -235,7 +239,7 @@
     function loadLogs() {
       return api("api/admin/logs", { action: "list", site_id: siteId, limit: 100 })
         .then(function (data) { renderLogs(data.logs); })
-        .catch(function (e) { $("logs").innerHTML = ""; $("logs").appendChild(el("div", "empty", "Erreur : " + e.message)); });
+        .catch(function (e) { $("logs").innerHTML = ""; $("logs").appendChild(el("div", "empty", t("error.prefix", { error: e.message }))); });
     }
 
     // ---------- Événements ----------
@@ -246,24 +250,23 @@
       var changes = { api_root: $("api-root").value.trim(), default_lang: $("default-lang").value.trim() };
       var token = $("api-token").value.trim();
       if (token) changes.token = token;
-      save(changes, "Configuration enregistrée");
+      save(changes, t("cfg.saved"));
     });
-    $("clear-token").addEventListener("click", function () { save({ token: "" }, "Token supprimé"); });
+    $("clear-token").addEventListener("click", function () { save({ token: "" }, t("cfg.token_cleared")); });
     $("toggle-token").addEventListener("click", function () {
       var input = $("api-token");
       var show = input.type === "password";
       input.type = show ? "text" : "password";
-      this.textContent = show ? "Masquer" : "Afficher";
+      this.textContent = show ? t("cfg.hide") : t("cfg.show");
     });
     $("refresh-logs").addEventListener("click", loadLogs);
     $("clear-logs").addEventListener("click", function () {
-      if (!confirm(siteId ? "Vider le journal du site " + siteId + " ?" : "Vider tout le journal ?")) return;
+      if (!confirm(siteId ? t("logs.confirm_site", { id: siteId }) : t("logs.confirm_all"))) return;
       api("api/admin/logs", { action: "clear", site_id: siteId }).then(function (d) { renderLogs(d.logs); }).catch(function (e) { notice(e.message); });
     });
 
     // Pré-remplissage : clé de la session, site depuis ?site_id=
     $("admin-key").value = storedKey();
-    var qs = new URLSearchParams(location.search);
     if (qs.get("site_id")) $("site-id").value = qs.get("site_id");
     if ($("admin-key").value || qs.get("site_id")) load();
   })();

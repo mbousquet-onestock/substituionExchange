@@ -17,7 +17,7 @@ function preview(token) {
 
 function checkSiteId(siteId) {
   const id = typeof siteId === "string" ? siteId.trim() : "";
-  if (id && !/^[a-z0-9_-]{1,32}$/i.test(id)) throw Object.assign(new Error("site_id invalide"), { status: 400 });
+  if (id && !/^[a-z0-9_-]{1,32}$/i.test(id)) throw Object.assign(new Error("site_id invalide"), { status: 400, code: "site_id_invalid" });
   return id;
 }
 
@@ -49,19 +49,19 @@ module.exports = adminEndpoint(async (req) => {
       const raw = String(req.api_root || "").trim();
       const root = raw ? onestock.normalizeApiRoot(raw) : "";
       if (root === null) {
-        return { status: 400, data: { error: "Route de l'API invalide : URL https en *.onestock-retail.com attendue (ex. https://api-qualif.onestock-retail.com)" } };
+        return { status: 400, data: { error: "Route de l'API invalide : URL https en *.onestock-retail.com attendue (ex. https://api-qualif.onestock-retail.com)", code: "invalid_api_root" } };
       }
       changes.api_root = root;
     }
     if (req.default_lang !== undefined) {
       const raw = String(req.default_lang || "").trim();
       const lang = raw ? onestock.normalizeLang(raw) : "";
-      if (lang === null) return { status: 400, data: { error: "Langue invalide : code à 2 lettres attendu (ex. fr)" } };
+      if (lang === null) return { status: 400, data: { error: "Langue invalide : code à 2 lettres attendu (ex. fr)", code: "invalid_lang" } };
       changes.default_lang = lang;
     }
     if (req.token !== undefined) {
       const token = String(req.token || "").trim();
-      if (token && !/^[\w.+/=-]{1,1024}$/.test(token)) return { status: 400, data: { error: "Format de token invalide" } };
+      if (token && !/^[\w.+/=-]{1,1024}$/.test(token)) return { status: 400, data: { error: "Format de token invalide", code: "invalid_token_format" } };
       changes.token = token;
     }
     await db.setSiteSettings(siteId, changes);

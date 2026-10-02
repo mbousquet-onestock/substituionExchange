@@ -8,6 +8,7 @@ référence, état, quantité). Elle est déployée sur **Vercel**.
 
 ```
 public/index.html   pop-up (parcours de substitution)
+public/i18n.js      traductions (fr, en, es, it, de)
 public/config.html  page d'administration : configuration par site + journal des appels API
 public/context.html affichage brut du contexte reçu de OneStock (debug)
 api/orders/[id].js  GET  /api/orders/{id} : proxy dédié vers GET /v3/orders/{id}
@@ -48,6 +49,15 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
    « Valider la substitution » envoie à la page parente un `postMessage`
    `{ type: "substitution_validated", substitutions: [{ order_id, line_item_group_id, item_id, quantity, substitute_item_id }] }`.
    Aucune modification n'est encore envoyée à OneStock.
+
+## Traductions
+
+Les textes des pages sont dans `public/i18n.js` (fr, en, es, it, de ; libellés des états OneStock inclus).
+- **Pop-up** : langue du contexte OneStock (paramètre d'URL `lang`, sinon `locale`, sinon navigateur).
+- **Page de configuration** : `?lang=` si fourni, sinon langue du navigateur.
+- Langue non traduite → anglais ; clé absente d'une langue → anglais puis français.
+- Les erreurs du serveur portent un `code` (ex. `token_missing`) traduit côté page.
+- Les prix sont formatés selon la locale du contexte.
 
 ## Page de configuration (`/config.html`)
 

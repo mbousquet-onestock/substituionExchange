@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Articles de la commande</title>
+  <title>Substitution</title>
+  <script src="i18n.js"></script>
   <style>
     :root {
       --bg: #ffffff; --text: #1f2430; --muted: #6b7280; --border: #dfe2e7; --panel: #f3f4f6;
@@ -92,18 +93,18 @@
 <body>
   <div id="panel-items">
     <div class="stepper" id="stepper">
-      <div class="step" data-step="0"><span class="circle"></span>Articles</div>
-      <div class="step" data-step="1"><span class="circle"></span>Substitution</div>
-      <div class="step" data-step="2"><span class="circle"></span>Validation</div>
+      <div class="step" data-step="0"><span class="circle"></span><span data-i18n="step.items">Articles</span></div>
+      <div class="step" data-step="1"><span class="circle"></span><span data-i18n="step.substitution">Substitution</span></div>
+      <div class="step" data-step="2"><span class="circle"></span><span data-i18n="step.validation">Validation</span></div>
     </div>
-    <div id="orders"><div class="loading">Chargement des articles…</div></div>
+    <div id="orders"><div class="loading" data-i18n="loading.items">Chargement des articles…</div></div>
   </div>
 
   <div class="footer">
-    <button id="back" type="button" hidden>Retour</button>
+    <button id="back" type="button" hidden data-i18n="btn.back">Retour</button>
     <span class="spacer"></span>
-    <button id="close" type="button">Close</button>
-    <button id="next" class="accent" type="button" hidden>Suivant</button>
+    <button id="close" type="button" data-i18n="btn.close">Fermer</button>
+    <button id="next" class="accent" type="button" hidden data-i18n="btn.next">Suivant</button>
   </div>
 
   <template id="icon-info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></template>
@@ -129,6 +130,10 @@
       var params = new URLSearchParams(window.location.search);
       var lang = (params.get("lang") || navigator.language || "en").slice(0, 2);
       var locale = (params.get("locale") || params.get("lang") || navigator.language || "en").replace("_", "-");
+      // Traductions de la page dans la langue du contexte
+      var t = I18N.create(params.get("lang") || params.get("locale") || navigator.language);
+      document.title = t("title.popup");
+      t.apply();
       var allowedOrigin = null;
       try { if (params.get("parent_url")) allowedOrigin = new URL(params.get("parent_url")).origin; } catch (e) {}
 
@@ -148,8 +153,8 @@
       }
 
       function handleResponse(res) {
-        return res.json().catch(function () { return { error: "Réponse invalide (" + res.status + ")" }; }).then(function (data) {
-          if (!res.ok) throw Object.assign(new Error(data.error || "Erreur " + res.status), { auth: !!data.auth_error || res.status === 401 });
+        return res.json().catch(function () { return { error: t("err.invalid_response", { status: res.status }) }; }).then(function (data) {
+          if (!res.ok) throw Object.assign(new Error(t.error(data, t("err.http", { status: res.status }))), { auth: !!data.auth_error || res.status === 401 });
           return data;
         });
       }
@@ -172,10 +177,10 @@
       // Contrôle du statut renvoyé par OneStock à travers le proxy
       function checkOneStock(path) {
         return function (r) {
-          if (r.status === 401) throw Object.assign(new Error("Token refusé par OneStock (401) : vérifiez le token du site dans la page de configuration (/config.html)"), { auth: true });
+          if (r.status === 401) throw Object.assign(new Error(t("err.onestock_401")), { auth: true });
           if (r.status < 200 || r.status >= 300) {
             var msg = r.data && (r.data.message || r.data.error || r.data.raw);
-            throw new Error("OneStock " + path + " : " + r.status + (msg ? " " + (typeof msg === "string" ? msg : JSON.stringify(msg)) : ""));
+            throw new Error(t("err.onestock", { path: path, status: r.status, message: msg ? (typeof msg === "string" ? msg : JSON.stringify(msg)) : "" }).trim());
           }
           return r.data;
         };
@@ -323,9 +328,10 @@
       }
 
       function loadItems() {
-        document.getElementById("orders").innerHTML = '<div class="loading">Chargement des articles…</div>';
+        document.getElementById("orders").innerHTML = "";
+        document.getElementById("orders").appendChild(el("div", "loading", t("loading.items")));
         if (!orderIds.length) {
-          wizard = { step: 0, orders: [{ id: "", error: "Aucune commande transmise par OneStock (order_id)" }], selected: {}, replacements: {}, candidates: {}, results: {} };
+          wizard = { step: 0, orders: [{ id: "", error: t("order.missing") }], selected: {}, replacements: {}, candidates: {}, results: {} };
           render();
           return;
         }
@@ -352,6 +358,8 @@
       }
       function icon(id) { return document.getElementById(id).content.firstElementChild.cloneNode(true); }
       function capitalize(s) { s = String(s).replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); }
+      // Libellé traduit de l'état OneStock (valeur brute si non traduite)
+      function stateLabel(state) { var k = "state." + state; var v = t(k); return v === k ? capitalize(state) : v; }
       function placeholder() { var ph = el("div", "thumb"); ph.appendChild(icon("icon-box")); return ph; }
 
       function formatPrice(amount, currency) {
@@ -379,8 +387,8 @@
         if (details) info.appendChild(el("div", "details", details));
         info.appendChild(el("div", "sku", item.item_id));
         row.appendChild(info);
-        if (opts.badge !== false && item.state) row.appendChild(el("span", "badge " + (STATE_COLORS[item.state] || ""), capitalize(item.state)));
-        if (opts.qty !== false && item.quantity != null) row.appendChild(el("div", "qty", "Qty " + item.quantity));
+        if (opts.badge !== false && item.state) row.appendChild(el("span", "badge " + (STATE_COLORS[item.state] || ""), stateLabel(item.state)));
+        if (opts.qty !== false && item.quantity != null) row.appendChild(el("div", "qty", t("qty", { n: item.quantity })));
         if (opts.check) row.appendChild(el("span", "check" + (opts.check === "radio" ? " radio" : ""), ""));
         return row;
       }
@@ -409,8 +417,8 @@
         var header = el("div", "order-header");
         header.appendChild(icon("icon-info"));
         var txt = el("div");
-        txt.appendChild(el("div", "order-title", order.id ? "Commande " + order.id : "Erreur"));
-        txt.appendChild(el("div", "order-sub", "Impossible de récupérer la commande : " + order.error));
+        txt.appendChild(el("div", "order-title", order.id ? t("order.title", { id: order.id }) : t("order.error")));
+        txt.appendChild(el("div", "order-sub", t("order.load_failed", { error: order.error })));
         header.appendChild(txt);
         card.appendChild(header);
         return card;
@@ -448,13 +456,13 @@
         back.hidden = wizard.step === 0 || wizard.validated;
         next.hidden = !hasItems || wizard.validated;
         if (wizard.step === 0) {
-          next.textContent = "Suivant";
+          next.textContent = t("btn.next");
           next.disabled = selectedItems().length === 0;
         } else if (wizard.step === 1) {
-          next.textContent = "Suivant";
+          next.textContent = t("btn.next");
           next.disabled = selectedItems().some(function (it) { return !wizard.replacements[it.key]; });
         } else {
-          next.textContent = "Valider la substitution";
+          next.textContent = t("btn.validate");
           next.disabled = false;
         }
       }
@@ -465,11 +473,11 @@
         errors.forEach(function (o) { box.appendChild(errorCard(o)); });
         var orders = wizard.orders.filter(function (o) { return !o.error; });
         if (!orders.length) return;
-        box.appendChild(infoBanner("Sélectionnez les articles à substituer"));
+        box.appendChild(infoBanner(t("items.select")));
         orders.forEach(function (order) {
-          if (orders.length > 1) box.appendChild(el("div", "group-title", "Commande " + order.id));
+          if (orders.length > 1) box.appendChild(el("div", "group-title", t("order.title", { id: order.id })));
           var list = el("div", "list");
-          if (!order.items.length) list.appendChild(el("div", "empty", "Aucun article"));
+          if (!order.items.length) list.appendChild(el("div", "empty", t("items.none")));
           order.items.forEach(function (item) {
             list.appendChild(selectableCard(item, wizard.selected[item.key], function () {
               if (wizard.selected[item.key]) { delete wizard.selected[item.key]; delete wizard.replacements[item.key]; }
@@ -551,7 +559,7 @@
 
       // Étape 2 : choix d'un article de substitution pour chaque article sélectionné
       function renderStepSubstitution(box) {
-        box.appendChild(infoBanner("Choisissez un article de substitution pour chaque article, ou recherchez un autre article pour l'échange"));
+        box.appendChild(infoBanner(t("subst.intro")));
         selectedItems().forEach(function (item) {
           var block = el("section", "subst");
           var original = el("div", "card original");
@@ -559,30 +567,30 @@
           block.appendChild(original);
 
           var cand = wizard.candidates[item.key] || { items: [] };
-          block.appendChild(el("div", "label", "Articles de substitution"));
-          if (cand.loading) block.appendChild(el("div", "note", "Chargement des articles de substitution…"));
-          else if (cand.error) block.appendChild(el("div", "note", "Erreur : " + cand.error));
-          else if (!cand.items.length) block.appendChild(el("div", "note", "Aucun article de substitution sur la fiche article. Recherchez un autre article ci-dessous."));
+          block.appendChild(el("div", "label", t("subst.label")));
+          if (cand.loading) block.appendChild(el("div", "note", t("subst.loading")));
+          else if (cand.error) block.appendChild(el("div", "note", t("error.prefix", { error: cand.error })));
+          else if (!cand.items.length) block.appendChild(el("div", "note", t("subst.none")));
           else block.appendChild(candidateList(item, cand.items));
-          if (cand.missing && cand.missing.length) block.appendChild(el("div", "note", "Fiches introuvables : " + cand.missing.join(", ")));
+          if (cand.missing && cand.missing.length) block.appendChild(el("div", "note", t("subst.missing", { ids: cand.missing.join(", ") })));
 
-          block.appendChild(el("div", "label", "Rechercher un autre article"));
+          block.appendChild(el("div", "label", t("search.label")));
           var form = el("form", "search");
           var input = el("input");
           input.type = "search";
-          input.placeholder = "Nom ou référence de l'article";
+          input.placeholder = t("search.placeholder");
           var res = wizard.results[item.key];
           if (res) input.value = res.query;
-          var btn = el("button", null, "Rechercher");
+          var btn = el("button", null, t("btn.search"));
           btn.type = "submit";
           form.appendChild(input);
           form.appendChild(btn);
           form.addEventListener("submit", function (e) { e.preventDefault(); searchItems(item, input.value); });
           block.appendChild(form);
           if (res) {
-            if (res.loading) block.appendChild(el("div", "note", "Recherche…"));
-            else if (res.error) block.appendChild(el("div", "note", "Erreur : " + res.error));
-            else if (!res.items.length) block.appendChild(el("div", "note", "Aucun article trouvé pour « " + res.query + " »"));
+            if (res.loading) block.appendChild(el("div", "note", t("search.loading")));
+            else if (res.error) block.appendChild(el("div", "note", t("error.prefix", { error: res.error })));
+            else if (!res.items.length) block.appendChild(el("div", "note", t("search.none", { query: res.query })));
             else block.appendChild(candidateList(item, res.items));
           }
           box.appendChild(block);
@@ -592,8 +600,8 @@
       // Étape 3 : récapitulatif
       function renderStepValidation(box) {
         box.appendChild(infoBanner(wizard.validated
-          ? "Substitution validée pour " + selectedItems().length + " article(s)."
-          : "Vérifiez les substitutions avant de valider", wizard.validated));
+          ? t("valid.done", { n: selectedItems().length })
+          : t("valid.check"), wizard.validated));
         selectedItems().forEach(function (item) {
           var row = el("div", "recap");
           var from = el("div", "card");
