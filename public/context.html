@@ -34,7 +34,7 @@
   <p class="sub">Point d'injection <code>bo.orders.action</code> — handshake : <span id="status" class="status wait">en attente de onestock_data…</span></p>
 
   <div class="card">
-    <h2>Commandes sélectionnées (order_ids)</h2>
+    <h2>Commande(s) (order_id / order_ids)</h2>
     <div id="orders"><span class="empty">Aucune donnée reçue pour l'instant</span></div>
   </div>
 
@@ -136,7 +136,7 @@
           status.textContent = "onestock_data reçu";
           status.className = "status ok";
           renderTable(document.getElementById("shared-data"), Object.keys(data).map(function (k) { return [k, data[k]]; }));
-          renderOrders(data.order_ids);
+          renderOrders(data.order_id || data.order_ids);
           document.getElementById("raw").textContent = JSON.stringify(event.data, null, 2);
           resize();
         }

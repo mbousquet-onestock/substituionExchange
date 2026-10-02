@@ -28,9 +28,18 @@ function serveStatic(req, res) {
   });
 }
 
+const orderHandler = require("../api/orders/[id]");
+
 const port = Number(process.env.PORT) || 3000;
 http.createServer((req, res) => {
-  const handler = API[req.url.split("?")[0]];
+  const pathname = req.url.split("?")[0];
+  // Route dynamique Vercel api/orders/[id].js
+  const order = pathname.match(/^\/api\/orders\/([^/]+)$/);
+  if (order) {
+    req.query = { ...Object.fromEntries(new URL(req.url, "http://x").searchParams), id: decodeURIComponent(order[1]) };
+    return orderHandler(req, res);
+  }
+  const handler = API[pathname];
   if (handler) return handler(req, res);
   if (req.method === "GET") return serveStatic(req, res);
   send(res, 405, { error: "Méthode non autorisée" });

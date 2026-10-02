@@ -9,15 +9,18 @@ référence, état, quantité). Elle est déployée sur **Vercel**.
 ```
 public/index.html   pop-up (onglets Articles / Config)
 public/context.html affichage brut du contexte reçu de OneStock (debug)
-api/proxy.js        POST /api/proxy  : proxy vers les API OneStock
+api/orders/[id].js  GET  /api/orders/{id} : proxy dédié vers GET /v3/orders/{id}
+api/proxy.js        POST /api/proxy  : proxy générique (fiches articles /v2/items)
 api/config.js       POST /api/config : lecture / enregistrement du token
 api/logs.js         POST /api/logs   : journal des appels API OneStock
 lib/                base de données, client OneStock, signature
 scripts/dev-server.js  serveur local qui reproduit Vercel
 ```
 
-1. La pop-up envoie `extension_ready` et reçoit `onestock_data` (`order_ids`, `extension_signature`).
-2. Tous les appels aux API OneStock passent par **`/api/proxy`**. Le proxy :
+1. La pop-up envoie `extension_ready` et reçoit `onestock_data` : le numéro de commande est lu dans
+   `order_id` (ou `order_ids`, séparés par des virgules), puis dans les paramètres d'URL du même nom.
+2. Tous les appels aux API OneStock passent par un proxy Vercel : **`GET /api/orders/{id}`** pour la
+   commande, **`POST /api/proxy`** pour les fiches articles. Le proxy :
    - vérifie la signature de l'extension ;
    - n'autorise que des routes en lecture (`GET /vX/orders/{id}`, `GET /vX/items`, `GET /vX/line_item_groups`) ;
    - ajoute `site_id` et le **token stocké en base** au body ;

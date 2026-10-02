@@ -134,8 +134,7 @@
     (function () {
       // Noms des features produit configurées sur le site OneStock
       var FEATURES = { name: "name", image: "image_url", color: "color", size: "size" };
-      // Version d'API utilisée pour chaque route
-      var ORDERS_API = "/v3/orders/";
+      // Fiches articles (via le proxy générique) ; les commandes passent par le proxy dédié /api/orders/{id}
       var ITEMS_API = "/v2/items";
 
       var params = new URLSearchParams(window.location.search);
@@ -159,43 +158,51 @@
         };
       }
 
+      function handleResponse(res) {
+        return res.json().catch(function () { return { error: "Réponse invalide (" + res.status + ")" }; }).then(function (data) {
+          if (!res.ok) throw Object.assign(new Error(data.error || "Erreur " + res.status), { auth: !!data.auth_error || res.status === 401 });
+          return data;
+        });
+      }
+
       function post(url, payload) {
         return fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(Object.assign(context(), payload))
-        }).then(function (res) {
-          return res.json().catch(function () { return { error: "Réponse invalide (" + res.status + ")" }; }).then(function (data) {
-            if (!res.ok) throw Object.assign(new Error(data.error || "Erreur " + res.status), { auth: !!data.auth_error || res.status === 401 });
-            return data;
-          });
-        });
+        }).then(handleResponse);
       }
 
-      // Appel d'une API OneStock via le proxy (token + site_id ajoutés côté serveur)
-      function onestock(path, body) {
-        return post("api/proxy", { method: "GET", path: path, body: body }).then(function (r) {
+      function get(url, query) {
+        var qs = new URLSearchParams();
+        var all = Object.assign(context(), query);
+        Object.keys(all).forEach(function (k) { if (all[k] !== undefined && all[k] !== null) qs.set(k, all[k]); });
+        return fetch(url + "?" + qs.toString()).then(handleResponse);
+      }
+
+      // Contrôle du statut renvoyé par OneStock à travers le proxy
+      function checkOneStock(path) {
+        return function (r) {
           if (r.status === 401) throw Object.assign(new Error("Token refusé par OneStock (401) : vérifiez le token dans l'onglet Config"), { auth: true });
           if (r.status < 200 || r.status >= 300) {
             var msg = r.data && (r.data.message || r.data.error || r.data.raw);
             throw new Error("OneStock " + path + " : " + r.status + (msg ? " " + (typeof msg === "string" ? msg : JSON.stringify(msg)) : ""));
           }
           return r.data;
-        });
+        };
+      }
+
+      // Appel d'une API OneStock via le proxy générique (token + site_id ajoutés côté serveur)
+      function onestock(path, body) {
+        return post("api/proxy", { method: "GET", path: path, body: body }).then(checkOneStock(path));
+      }
+
+      // GET order via le proxy Vercel dédié
+      function getOrder(id) {
+        return get("api/orders/" + encodeURIComponent(id), { lang: lang }).then(checkOneStock("/v3/orders/" + id));
       }
 
       // ---------- Récupération des articles ----------
-
-      function orderFields() {
-        var f = [FEATURES.name, FEATURES.color, FEATURES.size];
-        return ["id", "types", "state",
-          "order_items._id", "order_items.item_id", "order_items.quantity",
-          "order_items.pricing_details.unit_price", "order_items.pricing_details.currency"]
-          .concat(f.map(function (n) { return "order_items.item.features." + n; }))
-          .concat(["line_item_groups.id", "line_item_groups.order_item_id", "line_item_groups.item_id",
-            "line_item_groups.quantity", "line_item_groups.state"])
-          .concat(f.map(function (n) { return "line_item_groups.item.features." + n; }));
-      }
 
       function first(v) { return Array.isArray(v) ? v[0] : v; }
 
@@ -247,7 +254,7 @@
       }
 
       function loadOrder(id) {
-        return onestock(ORDERS_API + encodeURIComponent(id), { fields: orderFields(), item_features_lang: lang })
+        return getOrder(id)
           .then(function (order) {
             var ids = (order.line_item_groups || []).concat(order.order_items || []).map(function (x) { return x.item_id; });
             // Une fiche article indisponible n'empêche pas d'afficher la commande
@@ -260,7 +267,7 @@
 
       function loadItems() {
         document.getElementById("orders").innerHTML = '<div class="loading">Chargement des articles…</div>';
-        if (!orderIds.length) { render([{ id: "", error: "Aucune commande transmise par OneStock (order_ids)" }]); return; }
+        if (!orderIds.length) { render([{ id: "", error: "Aucune commande transmise par OneStock (order_id)" }]); return; }
         Promise.all(orderIds.map(loadOrder)).then(function (orders) {
           render(orders);
           var authError = orders.filter(function (o) { return o.auth; })[0];
@@ -459,7 +466,8 @@
         if (allowedOrigin && event.origin !== allowedOrigin) return;
         if (!event.data || typeof event.data !== "object" || event.data.type !== "onestock_data") return;
         shared = event.data.data || {};
-        var raw = shared.order_ids;
+        // Numéro de commande : order_id (une commande), ou order_ids (plusieurs, séparées par des virgules)
+        var raw = shared.order_id || shared.order_ids || params.get("order_id") || params.get("order_ids");
         orderIds = (Array.isArray(raw) ? raw : String(raw || "").split(",")).map(function (s) { return String(s).trim(); }).filter(Boolean);
         loadTokenState();
         loadItems();
