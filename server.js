@@ -3,8 +3,11 @@
 // Serveur de l'extension OneStock "bo.orders.action".
 // - sert les fichiers statiques de ./public
 // - expose POST /api/orders/items, qui vérifie la signature de l'extension
-//   puis récupère les articles des commandes via l'API OneStock (GET /orders/{id}).
-// Les identifiants API restent côté serveur et ne sont jamais envoyés au navigateur.
+//   puis récupère les articles des commandes via l'API OneStock :
+//     GET /v3/orders/{id}  -> articles, quantités, prix, états
+//     GET /v2/items        -> fiche article (image, et nom/couleur/taille en repli)
+// Authentification : token saisi dans l'onglet de config de la pop-up s'il est fourni,
+// sinon login avec les identifiants configurés côté serveur.
 
 const http = require("http");
 const fs = require("fs");
@@ -16,9 +19,9 @@ const config = {
   siteId: process.env.ONESTOCK_SITE_ID,
   user: process.env.ONESTOCK_USER,
   password: process.env.ONESTOCK_PASSWORD,
-  // ex. https://c00.api.qualif.onestock-retail.com/v3
-  apiBase: (process.env.ONESTOCK_API_BASE ||
-    (process.env.ONESTOCK_SITE_ID ? `https://${process.env.ONESTOCK_SITE_ID}.api.qualif.onestock-retail.com/v3` : "")).replace(/\/$/, ""),
+  // Racine de l'API, sans version. Par défaut : https://{site_id}.api.{qualif.}onestock-retail.com
+  apiRoot: (process.env.ONESTOCK_API_ROOT || "").replace(/\/$/, ""),
+  env: process.env.ONESTOCK_ENV === "prod" ? "prod" : "qualif",
   // Clés secrètes de l'extension (séparées par des virgules : courante, précédente, plus ancienne)
   secretKeys: (process.env.EXTENSION_SECRET_KEYS || "").split(",").map((s) => s.trim()).filter(Boolean),
   // Noms des features produit configurées sur le site OneStock
@@ -64,49 +67,65 @@ function isSignatureValid(ctx) {
 
 // ---------- Client API OneStock ----------
 
-let token = null;
-let loginPromise = null;
-
-// Un seul login à la fois, même si plusieurs commandes sont chargées en parallèle
-function login() {
-  if (!loginPromise) loginPromise = doLogin().finally(() => { loginPromise = null; });
-  return loginPromise;
+function apiRoot(siteId) {
+  if (config.apiRoot) return config.apiRoot;
+  return `https://${siteId}.api.${config.env === "prod" ? "" : "qualif."}onestock-retail.com`;
 }
 
-async function doLogin() {
-  const res = await fetch(`${config.apiBase}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ site_id: config.siteId, user_id: config.user, password: config.password }),
-  });
-  if (!res.ok) throw new Error(`Échec du login OneStock (${res.status})`);
-  token = (await res.json()).token;
-  return token;
+// Un client par requête : site_id + token éventuel fourni par la pop-up.
+function createClient(siteId, userToken) {
+  const root = apiRoot(siteId);
+  return { siteId, root, userToken: userToken || null };
+}
+
+const loginCache = new Map(); // siteId -> { token, promise }
+
+function login(client) {
+  let entry = loginCache.get(client.siteId);
+  if (entry && entry.token) return Promise.resolve(entry.token);
+  if (entry && entry.promise) return entry.promise;
+  if (!config.user || !config.password) {
+    return Promise.reject(Object.assign(new Error("Aucun token configuré (onglet Config) ni identifiants serveur"), { status: 401 }));
+  }
+  entry = {};
+  entry.promise = (async () => {
+    const res = await fetch(`${client.root}/v3/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ site_id: client.siteId, user_id: config.user, password: config.password }),
+    });
+    if (!res.ok) throw new Error(`Échec du login OneStock (${res.status})`);
+    entry.token = (await res.json()).token;
+    return entry.token;
+  })().finally(() => { entry.promise = null; if (!entry.token) loginCache.delete(client.siteId); });
+  loginCache.set(client.siteId, entry);
+  return entry.promise;
 }
 
 // Les GET OneStock portent un body : on utilise POST + X-HTTP-Method-Override: GET.
-async function apiGet(route, body, retry = true) {
-  if (!token) await login();
-  const res = await fetch(`${config.apiBase}${route}`, {
+async function apiGet(client, route, body, retry = true) {
+  const token = client.userToken || await login(client);
+  const res = await fetch(`${client.root}${route}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-HTTP-Method-Override": "GET" },
-    body: JSON.stringify({ ...body, site_id: config.siteId, token }),
+    body: JSON.stringify({ ...body, site_id: client.siteId, token }),
   });
-  if (res.status === 401 && retry) {
-    token = null;
-    return apiGet(route, body, false);
+  if (res.status === 401) {
+    if (client.userToken) throw Object.assign(new Error("Token invalide ou expiré (onglet Config)"), { status: 401 });
+    if (retry) {
+      loginCache.delete(client.siteId);
+      return apiGet(client, route, body, false);
+    }
   }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    const err = new Error(`OneStock ${route} : ${res.status} ${text.slice(0, 300)}`);
-    err.status = res.status;
-    throw err;
+    throw Object.assign(new Error(`OneStock ${route} : ${res.status} ${text.slice(0, 300)}`), { status: res.status });
   }
   return res.json();
 }
 
 function orderFields() {
-  const f = Object.values(config.features);
+  const f = [config.features.name, config.features.color, config.features.size];
   return [
     "id",
     "types",
@@ -128,9 +147,29 @@ function orderFields() {
 
 const first = (v) => (Array.isArray(v) ? v[0] : v);
 
+// Fiches articles (GET /v2/items, filtre item_ids) -> Map item_id -> features (langue demandée, sinon la première dispo)
+async function getItemSheets(client, itemIds, lang) {
+  const ids = [...new Set(itemIds.filter(Boolean))];
+  if (!ids.length) return new Map();
+  const data = await apiGet(client, "/v2/items", {
+    item_ids: ids,
+    features: Object.values(config.features),
+    lang,
+    get_total: false,
+    pagination: { start: 0, limit: ids.length },
+  });
+  const sheets = new Map();
+  (data.items || []).forEach((item) => {
+    const byLang = item.features || {};
+    sheets.set(item.id, byLang[lang] || Object.values(byLang)[0] || {});
+  });
+  return sheets;
+}
+
 // Transforme la commande OneStock en liste d'articles prêts à afficher.
-// Une ligne par line_item_group (quantité + état), enrichie du prix de l'order_item.
-function toItems(order) {
+// Une ligne par line_item_group (quantité + état), enrichie du prix de l'order_item
+// et de l'image de la fiche article.
+function toItems(order, sheets = new Map()) {
   const orderItems = new Map((order.order_items || []).map((oi) => [oi.id || oi._id, oi]));
   const groups = order.line_item_groups && order.line_item_groups.length
     ? order.line_item_groups
@@ -138,12 +177,13 @@ function toItems(order) {
 
   return groups.map((g) => {
     const oi = orderItems.get(g.order_item_id) || (order.order_items || []).find((o) => o.item_id === g.item_id) || {};
-    const features = { ...((oi.item && oi.item.features) || {}), ...((g.item && g.item.features) || {}) };
+    const sheet = sheets.get(g.item_id) || {};
+    const features = { ...sheet, ...((oi.item && oi.item.features) || {}), ...((g.item && g.item.features) || {}) };
     const pricing = oi.pricing_details || {};
     return {
       item_id: g.item_id,
       name: first(features[config.features.name]) || g.item_id,
-      image: first(features[config.features.image]) || null,
+      image: first(sheet[config.features.image]) || null,
       color: first(features[config.features.color]) || null,
       size: first(features[config.features.size]) || null,
       unit_price: pricing.unit_price ?? null,
@@ -154,13 +194,19 @@ function toItems(order) {
   });
 }
 
-async function getOrderItems(orderId, lang) {
+async function getOrderItems(client, orderId, lang) {
   if (config.mock) return mockOrder(orderId);
-  const order = await apiGet(`/orders/${encodeURIComponent(orderId)}`, {
+  const order = await apiGet(client, `/v3/orders/${encodeURIComponent(orderId)}`, {
     fields: orderFields(),
     item_features_lang: lang,
   });
-  return { id: order.id || orderId, types: order.types || [], state: order.state, items: toItems(order) };
+  const itemIds = [...(order.line_item_groups || []), ...(order.order_items || [])].map((x) => x.item_id);
+  // Une fiche article indisponible ne doit pas empêcher d'afficher la commande
+  const sheets = await getItemSheets(client, itemIds, lang).catch((e) => {
+    console.warn(`Fiches articles indisponibles pour ${orderId} : ${e.message}`);
+    return new Map();
+  });
+  return { id: order.id || orderId, types: order.types || [], state: order.state, items: toItems(order, sheets) };
 }
 
 function mockOrder(orderId) {
@@ -206,10 +252,18 @@ async function handleOrderItems(req, res) {
     .map((s) => String(s).trim()).filter(Boolean).slice(0, 50);
   if (!ids.length) return sendJson(res, 400, { error: "Aucune commande (order_ids)" });
 
+  // site_id : celui du serveur s'il est configuré, sinon celui transmis par OneStock (paramètre d'URL)
+  const siteId = config.siteId || body.site_id;
+  if (!config.mock && !/^[a-z0-9_-]{1,32}$/i.test(siteId || "")) return sendJson(res, 400, { error: "site_id manquant ou invalide" });
+
+  const token = typeof body.api_token === "string" ? body.api_token.trim() : "";
+  if (token && !/^[\w.+/=-]{1,512}$/.test(token)) return sendJson(res, 400, { error: "Format de token invalide" });
+
   const lang = /^[a-z]{2}([_-][A-Za-z]{2})?$/.test(body.lang || "") ? body.lang.slice(0, 2) : config.defaultLang;
+  const client = createClient(siteId, token);
 
   const orders = await Promise.all(ids.map((id) =>
-    getOrderItems(id, lang).catch((e) => ({ id, error: e.message }))));
+    getOrderItems(client, id, lang).catch((e) => ({ id, error: e.message }))));
   sendJson(res, 200, { orders });
 }
 
@@ -233,9 +287,8 @@ const server = http.createServer((req, res) => {
 });
 
 if (require.main === module) {
-  if (!config.mock && (!config.siteId || !config.user || !config.password)) {
-    console.error("ONESTOCK_SITE_ID, ONESTOCK_USER et ONESTOCK_PASSWORD sont requis (ou ONESTOCK_MOCK=1).");
-    process.exit(1);
+  if (!config.mock && (!config.user || !config.password)) {
+    console.warn("ℹ ONESTOCK_USER / ONESTOCK_PASSWORD non définis : seul le token saisi dans l'onglet Config sera utilisé.");
   }
   if (!config.secretKeys.length) console.warn("⚠ EXTENSION_SECRET_KEYS non défini : la signature de l'extension n'est pas vérifiée.");
   server.listen(config.port, () => console.log(`Extension disponible sur http://localhost:${config.port}`));

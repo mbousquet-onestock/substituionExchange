@@ -38,6 +38,21 @@
     button { font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; }
     button:hover { background: var(--panel); }
     .loading { color: var(--muted); padding: 24px 0; text-align: center; }
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .tabs[hidden] { display: none; }
+    .tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); }
+    .tab:hover { background: none; color: var(--text); }
+    .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--text); }
+    .config label { display: block; font-weight: 600; margin-bottom: 4px; }
+    .config .hint { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+    .config input { width: 100%; font: 13px ui-monospace, Menlo, Consolas, monospace; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; }
+    .config .row { display: flex; gap: 8px; align-items: center; }
+    .config .row input { flex: 1; }
+    .config .buttons { display: flex; gap: 8px; margin-top: 12px; }
+    .config .saved { color: #1f8a4c; font-size: 13px; }
+    button.primary { background: var(--text); border-color: var(--text); color: #fff; }
+    button.primary:hover { background: #374151; }
+    .footer-spacer { flex: 1; }
     @media (max-width: 480px) {
       .item { flex-wrap: wrap; }
       .info { flex-basis: calc(100% - 60px); }
@@ -46,8 +61,31 @@
   </style>
 </head>
 <body>
-  <div id="orders"><div class="loading">Chargement des articles…</div></div>
-  <div class="footer"><button id="close" type="button">Close</button></div>
+  <!-- Onglets masqués : affichés avec Ctrl+Shift+K ou 5 clics rapides en bas à gauche -->
+  <div class="tabs" id="tabs" role="tablist" hidden>
+    <button class="tab" type="button" role="tab" id="tab-items" aria-controls="panel-items" aria-selected="true">Articles</button>
+    <button class="tab" type="button" role="tab" id="tab-config" aria-controls="panel-config" aria-selected="false">Config</button>
+  </div>
+
+  <div id="panel-items" role="tabpanel">
+    <div id="orders"><div class="loading">Chargement des articles…</div></div>
+  </div>
+
+  <form id="panel-config" class="config" role="tabpanel" hidden autocomplete="off">
+    <label for="api-token">Token API OneStock</label>
+    <div class="row">
+      <input id="api-token" type="password" spellcheck="false" placeholder="ex. bc1c6289ab172z0z1bd9b76838247416">
+      <button id="toggle-token" type="button">Afficher</button>
+    </div>
+    <p class="hint">Token obtenu via <code>POST /login</code>. Utilisé à la place des identifiants du serveur. Stocké uniquement dans ce navigateur.</p>
+    <div class="buttons">
+      <button class="primary" type="submit">Enregistrer et recharger</button>
+      <button id="clear-token" type="button">Effacer</button>
+      <span id="saved" class="saved" role="status"></span>
+    </div>
+  </form>
+
+  <div class="footer"><span id="secret" class="footer-spacer" aria-hidden="true"></span><button id="close" type="button">Close</button></div>
 
   <template id="icon-info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></template>
   <template id="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></template>
@@ -59,6 +97,58 @@
       var locale = params.get("locale") || lang;
       var allowedOrigin = null;
       try { if (params.get("parent_url")) allowedOrigin = new URL(params.get("parent_url")).origin; } catch (e) {}
+
+      var TOKEN_KEY = "onestock_api_token";
+      var lastShared = null;
+
+      function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } }
+      function setToken(v) { try { v ? localStorage.setItem(TOKEN_KEY, v) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+
+      // ---- Onglet de config masqué ----
+      var tabs = document.getElementById("tabs");
+      var panels = { items: document.getElementById("panel-items"), config: document.getElementById("panel-config") };
+
+      function selectTab(name) {
+        ["items", "config"].forEach(function (n) {
+          document.getElementById("tab-" + n).setAttribute("aria-selected", String(n === name));
+          panels[n].hidden = n !== name;
+        });
+        if (name === "config") document.getElementById("api-token").value = getToken();
+        resize();
+      }
+      function revealConfig() { tabs.hidden = false; selectTab("config"); }
+
+      document.getElementById("tab-items").addEventListener("click", function () { selectTab("items"); });
+      document.getElementById("tab-config").addEventListener("click", function () { selectTab("config"); });
+      document.addEventListener("keydown", function (e) {
+        if (e.ctrlKey && e.shiftKey && (e.key === "K" || e.key === "k")) { e.preventDefault(); revealConfig(); }
+      });
+      var clicks = [];
+      document.getElementById("secret").addEventListener("click", function () {
+        var now = Date.now();
+        clicks = clicks.filter(function (t) { return now - t < 2000; }).concat(now);
+        if (clicks.length >= 5) { clicks = []; revealConfig(); }
+      });
+
+      document.getElementById("toggle-token").addEventListener("click", function () {
+        var input = document.getElementById("api-token");
+        var show = input.type === "password";
+        input.type = show ? "text" : "password";
+        this.textContent = show ? "Masquer" : "Afficher";
+      });
+      document.getElementById("panel-config").addEventListener("submit", function (e) {
+        e.preventDefault();
+        setToken(document.getElementById("api-token").value.trim());
+        document.getElementById("saved").textContent = "Enregistré";
+        setTimeout(function () { document.getElementById("saved").textContent = ""; }, 2000);
+        selectTab("items");
+        if (lastShared) loadItems(lastShared);
+      });
+      document.getElementById("clear-token").addEventListener("click", function () {
+        setToken("");
+        document.getElementById("api-token").value = "";
+        document.getElementById("saved").textContent = "Token effacé";
+      });
 
       // Couleur du badge selon l'état du line item group
       var STATE_COLORS = {
@@ -139,6 +229,8 @@
       }
 
       function loadItems(shared) {
+        lastShared = shared;
+        document.getElementById("orders").innerHTML = '<div class="loading">Chargement des articles…</div>';
         fetch("api/orders/items", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -147,6 +239,8 @@
             extension_id: params.get("extension_id"),
             user_id: params.get("user_id"),
             extension_signature: shared.extension_signature,
+            site_id: params.get("site_id"),
+            api_token: getToken() || undefined,
             lang: lang
           })
         })
