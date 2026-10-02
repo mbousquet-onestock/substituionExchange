@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contexte OneStock – bo.orders.action</title>
+  <style>
+    :root { --bg:#f7f8fa; --card:#fff; --text:#1d2433; --muted:#6b7385; --border:#e2e5ec; --accent:#2f6fed; --ok:#1f9d55; --warn:#d97706; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:16px; font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); }
+    h1 { font-size:18px; margin:0 0 4px; }
+    h2 { font-size:14px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+    .sub { color:var(--muted); margin:0 0 16px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:12px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; vertical-align:top; padding:6px 8px; border-bottom:1px solid var(--border); }
+    th { width:220px; font-weight:600; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; }
+    td { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; word-break:break-all; }
+    tr:last-child th, tr:last-child td { border-bottom:none; }
+    .empty { color:var(--muted); font-style:italic; }
+    .status { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+    .status.wait { background:#fef3c7; color:var(--warn); }
+    .status.ok { background:#dcfce7; color:var(--ok); }
+    ul.ids { margin:0; padding-left:18px; }
+    pre { margin:0; background:#0f172a; color:#e2e8f0; padding:10px; border-radius:6px; overflow:auto; max-height:260px; font-size:12px; }
+    .log div { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; padding:2px 0; border-bottom:1px dashed var(--border); }
+    .actions { display:flex; gap:8px; justify-content:flex-end; }
+    button { font:inherit; padding:7px 14px; border-radius:6px; border:1px solid var(--border); background:#fff; cursor:pointer; }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  </style>
+</head>
+<body>
+  <h1>Contexte reçu de OneStock</h1>
+  <p class="sub">Point d'injection <code>bo.orders.action</code> — handshake : <span id="status" class="status wait">en attente de onestock_data…</span></p>
+
+  <div class="card">
+    <h2>Commandes sélectionnées (order_ids)</h2>
+    <div id="orders"><span class="empty">Aucune donnée reçue pour l'instant</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Paramètres d'URL</h2>
+    <table id="url-params"></table>
+  </div>
+
+  <div class="card">
+    <h2>Données postMessage (onestock_data)</h2>
+    <table id="shared-data"><tr><td class="empty">En attente…</td></tr></table>
+  </div>
+
+  <div class="card">
+    <h2>Payload brut</h2>
+    <pre id="raw">—</pre>
+  </div>
+
+  <div class="card">
+    <h2>Journal des messages</h2>
+    <div id="log" class="log"></div>
+  </div>
+
+  <div class="actions">
+    <button id="btn-ready">Renvoyer extension_ready</button>
+    <button id="btn-close" class="primary">Fermer</button>
+  </div>
+
+  <script>
+    (function () {
+      // Paramètres documentés par OneStock + tous ceux présents dans l'URL
+      var EXPECTED_PARAMS = ["extension_id", "user_id", "site_id", "lang", "timezone", "locale", "parent_url", "injection_point_path", "host_app"];
+      var params = new URLSearchParams(window.location.search);
+
+      // Origine autorisée : dérivée de parent_url (sinon on accepte tout, pour le debug)
+      var allowedOrigin = null;
+      try { if (params.get("parent_url")) allowedOrigin = new URL(params.get("parent_url")).origin; } catch (e) {}
+
+      function el(tag, attrs, text) {
+        var n = document.createElement(tag);
+        if (attrs) Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+        if (text !== undefined) n.textContent = text;
+        return n;
+      }
+
+      function formatValue(v) {
+        if (v === null || v === undefined || v === "") return null;
+        return typeof v === "object" ? JSON.stringify(v, null, 2) : String(v);
+      }
+
+      function renderTable(table, entries) {
+        table.innerHTML = "";
+        if (!entries.length) {
+          var tr = el("tr"); tr.appendChild(el("td", { "class": "empty" }, "Aucune variable")); table.appendChild(tr);
+          return;
+        }
+        entries.forEach(function (e) {
+          var tr = el("tr");
+          tr.appendChild(el("th", null, e[0]));
+          var value = formatValue(e[1]);
+          tr.appendChild(value === null ? el("td", { "class": "empty" }, "(vide)") : el("td", null, value));
+          table.appendChild(tr);
+        });
+      }
+
+      function log(msg) {
+        var line = el("div", null, new Date().toLocaleTimeString() + "  " + msg);
+        document.getElementById("log").prepend(line);
+      }
+
+      // 1. Paramètres d'URL
+      var urlEntries = EXPECTED_PARAMS.map(function (k) { return [k, params.get(k)]; });
+      params.forEach(function (v, k) { if (EXPECTED_PARAMS.indexOf(k) === -1) urlEntries.push([k, v]); });
+      renderTable(document.getElementById("url-params"), urlEntries);
+
+      // 2. Données postMessage
+      function renderOrders(orderIds) {
+        var box = document.getElementById("orders");
+        box.innerHTML = "";
+        var ids = Array.isArray(orderIds) ? orderIds : String(orderIds || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+        if (!ids.length) { box.appendChild(el("span", { "class": "empty" }, "Aucune commande")); return; }
+        box.appendChild(el("p", { style: "margin:0 0 6px" }, ids.length + " commande(s)"));
+        var ul = el("ul", { "class": "ids" });
+        ids.forEach(function (id) { ul.appendChild(el("li", null, id)); });
+        box.appendChild(ul);
+      }
+
+      function handleMessage(event) {
+        if (allowedOrigin && event.origin !== allowedOrigin) {
+          log("Message ignoré (origine " + event.origin + ")");
+          return;
+        }
+        if (!event.data || typeof event.data !== "object") return;
+        log("Reçu : " + (event.data.type || "(sans type)") + " depuis " + event.origin);
+
+        if (event.data.type === "onestock_data") {
+          var data = event.data.data || {};
+          var status = document.getElementById("status");
+          status.textContent = "onestock_data reçu";
+          status.className = "status ok";
+          renderTable(document.getElementById("shared-data"), Object.keys(data).map(function (k) { return [k, data[k]]; }));
+          renderOrders(data.order_ids);
+          document.getElementById("raw").textContent = JSON.stringify(event.data, null, 2);
+          resize();
+        }
+      }
+
+      function sendReady() {
+        window.parent.postMessage({ type: "extension_ready" }, "*");
+        log("Envoyé : extension_ready");
+      }
+
+      function resize() {
+        window.parent.postMessage({ type: "extension_resize", height: document.documentElement.scrollHeight }, "*");
+      }
+
+      window.addEventListener("message", handleMessage);
+      document.getElementById("btn-ready").addEventListener("click", sendReady);
+      document.getElementById("btn-close").addEventListener("click", function () {
+        window.parent.postMessage({ type: "extension_close" }, "*");
+      });
+
+      if (window.parent === window) log("Page ouverte hors iframe : aucun contexte OneStock ne sera reçu.");
+      sendReady();
+    })();
+  </script>
+</body>
+</html>
