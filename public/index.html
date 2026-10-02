@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Articles de la commande</title>
+  <style>
+    :root {
+      --bg: #ffffff; --text: #1f2430; --muted: #6b7280; --border: #dfe2e7; --panel: #f3f4f6;
+      --thumb: #e5e7eb; --error: #b42318; --error-bg: #fef3f2;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; background: var(--bg); color: var(--text); font: 14px/1.4 Roboto, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .order { border: 1px solid var(--border); border-radius: 6px; padding: 4px; margin-bottom: 16px; }
+    .order-header { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 6px; padding: 12px 16px; }
+    .order-header svg { flex: none; margin-top: 2px; color: #4b5563; }
+    .order-title { font-size: 15px; font-weight: 600; }
+    .order-sub { color: #4b5563; font-size: 13px; margin-top: 2px; }
+    .order.error .order-header { background: var(--error-bg); color: var(--error); }
+    .order.error .order-header svg, .order.error .order-sub { color: var(--error); }
+    .item { display: flex; align-items: center; gap: 12px; padding: 12px; }
+    .item + .item { border-top: 1px solid var(--panel); }
+    .thumb { flex: none; width: 48px; height: 48px; border-radius: 4px; background: var(--thumb); object-fit: cover; display: flex; align-items: center; justify-content: center; color: #9ca3af; }
+    .info { flex: 1; min-width: 0; }
+    .name { font-size: 15px; font-weight: 600; }
+    .details { font-size: 15px; }
+    .sku { color: var(--muted); font-size: 13px; }
+    .name, .details, .sku { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .badge { flex: none; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 999px; background: #eef0f3; color: #4b5563; }
+    .badge.teal { background: #e6f6f4; color: #23a597; }
+    .badge.green { background: #e7f6ec; color: #1f8a4c; }
+    .badge.orange { background: #fdf1e3; color: #b8650b; }
+    .badge.red { background: #fdecea; color: #c0362c; }
+    .badge.blue { background: #e8f0fd; color: #2f62c9; }
+    .qty { flex: none; font-size: 15px; min-width: 48px; text-align: right; }
+    .empty { color: var(--muted); padding: 12px; }
+    .footer { display: flex; justify-content: flex-end; margin-top: 8px; }
+    button { font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; }
+    button:hover { background: var(--panel); }
+    .loading { color: var(--muted); padding: 24px 0; text-align: center; }
+    @media (max-width: 480px) {
+      .item { flex-wrap: wrap; }
+      .info { flex-basis: calc(100% - 60px); }
+      .badge { margin-left: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="orders"><div class="loading">Chargement des articles…</div></div>
+  <div class="footer"><button id="close" type="button">Close</button></div>
+
+  <template id="icon-info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></template>
+  <template id="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></template>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var lang = params.get("lang") || navigator.language || "en";
+      var locale = params.get("locale") || lang;
+      var allowedOrigin = null;
+      try { if (params.get("parent_url")) allowedOrigin = new URL(params.get("parent_url")).origin; } catch (e) {}
+
+      // Couleur du badge selon l'état du line item group
+      var STATE_COLORS = {
+        claimed: "teal", fulfilled: "green", collected: "green", delivered: "green", dispatched: "green", picked: "green", packed: "green",
+        pending: "orange", unassigned: "orange", assigned: "blue", reserved: "blue",
+        removed: "red", unfulfilled: "red", canceled: "red", cancelled: "red", declined: "red", returned: "red"
+      };
+
+      function el(tag, className, text) {
+        var n = document.createElement(tag);
+        if (className) n.className = className;
+        if (text !== undefined && text !== null) n.textContent = text;
+        return n;
+      }
+      function icon(id) { return document.getElementById(id).content.firstElementChild.cloneNode(true); }
+      function capitalize(s) { s = String(s).replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); }
+
+      function formatPrice(amount, currency) {
+        if (amount === null || amount === undefined) return null;
+        try { return new Intl.NumberFormat(locale.replace("_", "-"), { style: "currency", currency: currency || "EUR" }).format(amount); }
+        catch (e) { return amount + (currency ? " " + currency : ""); }
+      }
+
+      function renderItem(item) {
+        var row = el("div", "item");
+
+        if (item.image) {
+          var img = el("img", "thumb");
+          img.src = item.image; img.alt = item.name || ""; img.loading = "lazy";
+          img.onerror = function () { var ph = el("div", "thumb"); ph.appendChild(icon("icon-box")); img.replaceWith(ph); };
+          row.appendChild(img);
+        } else {
+          var ph = el("div", "thumb"); ph.appendChild(icon("icon-box")); row.appendChild(ph);
+        }
+
+        var info = el("div", "info");
+        info.appendChild(el("div", "name", item.name));
+        var details = [formatPrice(item.unit_price, item.currency), item.color, item.size].filter(Boolean).join(" | ");
+        if (details) info.appendChild(el("div", "details", details));
+        info.appendChild(el("div", "sku", item.item_id));
+        row.appendChild(info);
+
+        if (item.state) row.appendChild(el("span", "badge " + (STATE_COLORS[item.state] || ""), capitalize(item.state)));
+        row.appendChild(el("div", "qty", "Qty " + item.quantity));
+        return row;
+      }
+
+      function renderOrder(order) {
+        var card = el("section", "order" + (order.error ? " error" : ""));
+        var header = el("div", "order-header");
+        header.appendChild(icon("icon-info"));
+        var txt = el("div");
+        txt.appendChild(el("div", "order-title", "Commande " + order.id));
+        var sub = order.error
+          ? "Impossible de récupérer la commande : " + order.error
+          : [order.state && capitalize(order.state), (order.types || []).map(capitalize).join(", "),
+             order.items.length + " article(s)"].filter(Boolean).join(" · ");
+        txt.appendChild(el("div", "order-sub", sub));
+        header.appendChild(txt);
+        card.appendChild(header);
+
+        if (!order.error) {
+          if (!order.items.length) card.appendChild(el("div", "empty", "Aucun article"));
+          order.items.forEach(function (item) { card.appendChild(renderItem(item)); });
+        }
+        return card;
+      }
+
+      function showError(message) {
+        render([{ id: "", error: message }]);
+      }
+
+      function render(orders) {
+        var box = document.getElementById("orders");
+        box.innerHTML = "";
+        orders.forEach(function (o) { box.appendChild(renderOrder(o)); });
+        resize();
+      }
+
+      function loadItems(shared) {
+        fetch("api/orders/items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_ids: shared.order_ids,
+            extension_id: params.get("extension_id"),
+            user_id: params.get("user_id"),
+            extension_signature: shared.extension_signature,
+            lang: lang
+          })
+        })
+          .then(function (res) { return res.json().then(function (data) { if (!res.ok) throw new Error(data.error || res.status); return data; }); })
+          .then(function (data) { render(data.orders); })
+          .catch(function (e) { showError(e.message); });
+      }
+
+      function resize() {
+        window.parent.postMessage({ type: "extension_resize", height: document.documentElement.scrollHeight }, "*");
+      }
+
+      window.addEventListener("message", function (event) {
+        if (allowedOrigin && event.origin !== allowedOrigin) return;
+        if (!event.data || typeof event.data !== "object" || event.data.type !== "onestock_data") return;
+        loadItems(event.data.data || {});
+      });
+
+      document.getElementById("close").addEventListener("click", function () {
+        window.parent.postMessage({ type: "extension_close" }, "*");
+      });
+
+      window.parent.postMessage({ type: "extension_ready" }, "*");
+    })();
+  </script>
+</body>
+</html>
