@@ -604,7 +604,15 @@
             seen[x.id] = true;
             return true;
           });
-          wizard.results[item.key] = { query: query, items: found.map(function (x) { return sheetToItem(x.id, x.features || {}, item.currency); }) };
+          // La recherche ne renvoie que la langue demandée : on recharge les fiches dans toutes les langues
+          // pour compléter les champs vides (descriptif, image) avec la langue de repli (fr)
+          var ids = found.map(function (x) { return x.id; });
+          return fetchItemSheets(ids).catch(function () { return {}; }).then(function (sheets) {
+            wizard.results[item.key] = { query: query, items: found.map(function (x) {
+              var byLang = Object.assign({}, x.features || {}, sheets[x.id] || {});
+              return sheetToItem(x.id, byLang, item.currency);
+            }) };
+          });
         }).catch(function (e) {
           wizard.results[item.key] = { query: query, items: [], error: e.message };
         }).then(render);

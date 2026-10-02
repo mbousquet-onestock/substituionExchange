@@ -40,7 +40,8 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
    - les **articles de substitution** sont lus dans la feature `substitution` de la fiche article
      (identifiants d'articles, liste ou valeurs séparées par `,` / `;`), puis leurs fiches sont chargées via `GET /v2/items` ;
    - sinon (ou en complément) une **recherche** permet de trouver un autre article pour l'échange :
-     `GET /v2/items` par nom (`pattern` sur `name`) et par référence exacte (`item_ids`).
+     `GET /v2/items` par nom (`pattern` sur `name`) et par référence exacte (`item_ids`) ; les fiches trouvées
+     sont rechargées dans toutes les langues pour compléter les champs vides (descriptif, image) avec `fr`.
 3. **Validation** : récapitulatif article d'origine → article de remplacement (même quantité).
    « Valider la substitution » envoie à la page parente un `postMessage`
    `{ type: "substitution_validated", substitutions: [{ order_id, line_item_group_id, item_id, quantity, substitute_item_id }] }`.
