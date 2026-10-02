@@ -141,7 +141,8 @@
     (function () {
       // Noms des features produit configurées sur le site OneStock
       // (comparaison insensible à la casse, espaces et "_" : "Image URL" = "image_url" = "imageUrl")
-      var FEATURES = { name: "name", image: "Image URL", color: "color", size: "size" };
+      // Une liste = plusieurs noms possibles, le premier renseigné est utilisé
+      var FEATURES = { name: "name", image: ["image", "Image URL"], color: "color", size: "size" };
       // Langue de repli pour les fiches articles
       var FALLBACK_LANG = "fr";
       // Fiches articles (via le proxy générique) ; les commandes passent par le proxy dédié /api/orders/{id}
@@ -236,6 +237,13 @@
 
       // Valeur d'une feature dans un objet { nom: [valeurs] }, nom comparé sans casse ni séparateurs
       function featureIn(features, name) {
+        if (Array.isArray(name)) {
+          for (var n = 0; n < name.length; n++) {
+            var found = featureIn(features, name[n]);
+            if (found) return found;
+          }
+          return null;
+        }
         var wanted = normalizeKey(name);
         var keys = Object.keys(features || {});
         for (var i = 0; i < keys.length; i++) {
