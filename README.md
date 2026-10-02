@@ -32,6 +32,9 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
 
 ## Onglet Config
 
+- **Route de l'API** : racine des appels, par défaut `https://api-qualif.onestock-retail.com`
+  (ex. `https://api.onestock-retail.com` en production). Stockée en base ; seules les URL https
+  en `*.onestock-retail.com` sont acceptées (le token y est envoyé). Bouton « Par défaut » pour revenir à la valeur initiale.
 - **Token API OneStock** : saisi une fois, stocké en base (table `settings`), utilisé
   pour tous les appels. Il n'est jamais renvoyé au navigateur (seul un aperçu `abcd…wxyz` est affiché).
 - **Appels API OneStock** : les 100 derniers appels (500 conservés en base), avec
@@ -51,8 +54,7 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 |---|---|
 | `POSTGRES_URL` / `DATABASE_URL` | connexion Postgres (fournie par Vercel Storage) |
 | `ONESTOCK_SITE_ID` | ex. `c00`. Si absent, le `site_id` transmis par OneStock dans l'URL est utilisé |
-| `ONESTOCK_ENV` | `qualif` (défaut) ou `prod` |
-| `ONESTOCK_API_ROOT` | racine de l'API sans version, remplace l'URL calculée (`https://{site_id}.api.[qualif.]onestock-retail.com`) |
+| `ONESTOCK_API_ROOT` | route de l'API par défaut (défaut `https://api-qualif.onestock-retail.com`) ; la valeur saisie dans l'onglet Config est prioritaire |
 | `ONESTOCK_GET_TRANSPORT` | `xget` (défaut) ou `override` (`POST` + `X-HTTP-Method-Override: GET`) |
 | `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |
 

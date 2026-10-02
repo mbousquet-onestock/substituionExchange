@@ -98,15 +98,22 @@
     <p id="config-notice" class="notice" role="alert" hidden></p>
 
     <section>
-      <h2>Token API OneStock</h2>
-      <p id="token-state" class="token-state">…</p>
+      <h2>Connexion à l'API OneStock</h2>
       <form id="token-form" autocomplete="off">
-        <label for="api-token">Nouveau token</label>
+        <label for="api-root">Route de l'API</label>
         <div class="row">
-          <input id="api-token" type="password" spellcheck="false" placeholder="Nouveau token (ex. bc1c6289ab172z0z1bd9b76838247416)">
+          <input id="api-root" type="url" spellcheck="false" placeholder="https://api-qualif.onestock-retail.com">
+          <button id="reset-root" type="button">Par défaut</button>
+        </div>
+        <p class="hint">Racine des appels (ex. <code>{route}/v3/orders/{id}</code>). URL https en <code>*.onestock-retail.com</code>. Par défaut : <code id="api-root-default">https://api-qualif.onestock-retail.com</code></p>
+
+        <label for="api-token">Token</label>
+        <p id="token-state" class="token-state">…</p>
+        <div class="row">
+          <input id="api-token" type="password" spellcheck="false" placeholder="Nouveau token (laisser vide pour conserver l'actuel)">
           <button id="toggle-token" type="button">Afficher</button>
         </div>
-        <p class="hint">Enregistré en base de données et utilisé par le proxy pour tous les appels aux API OneStock. Il n'est jamais renvoyé au navigateur.</p>
+        <p class="hint">Route et token sont enregistrés en base de données et utilisés par le proxy pour tous les appels aux API OneStock. Le token n'est jamais renvoyé au navigateur.</p>
         <div class="buttons">
           <button class="primary" type="submit">Enregistrer et recharger</button>
           <button id="clear-token" type="button">Supprimer le token</button>
@@ -369,9 +376,14 @@
       document.getElementById("tab-items").addEventListener("click", function () { selectTab("items"); });
       document.getElementById("tab-config").addEventListener("click", function () { selectTab("config"); });
 
-      // ---------- Config : token ----------
+      // ---------- Config : route de l'API et token ----------
 
       function showTokenState(state) {
+        if (state.api_root) document.getElementById("api-root").value = state.api_root;
+        if (state.api_root_default) {
+          document.getElementById("api-root").placeholder = state.api_root_default;
+          document.getElementById("api-root-default").textContent = state.api_root_default;
+        }
         var p = document.getElementById("token-state");
         p.innerHTML = "";
         if (state.token_set) {
@@ -389,8 +401,9 @@
           .catch(function (e) { document.getElementById("token-state").textContent = "Erreur : " + e.message; });
       }
 
-      function saveToken(token, message) {
-        return post("api/config", { action: "set", token: token }).then(function (state) {
+      // changes : { token?, api_root? } — seuls les champs présents sont modifiés
+      function saveConfig(changes, message) {
+        return post("api/config", Object.assign({ action: "set" }, changes)).then(function (state) {
           showTokenState(state);
           document.getElementById("api-token").value = "";
           document.getElementById("config-notice").hidden = true;
@@ -402,12 +415,16 @@
 
       document.getElementById("token-form").addEventListener("submit", function (e) {
         e.preventDefault();
+        var changes = { api_root: document.getElementById("api-root").value.trim() };
         var token = document.getElementById("api-token").value.trim();
-        if (!token) { showConfig("Saisissez un token avant d'enregistrer."); return; }
-        saveToken(token, "Token enregistré").then(function () { selectTab("items"); loadItems(); }, function () {});
+        if (token) changes.token = token;
+        saveConfig(changes, "Configuration enregistrée").then(function () { selectTab("items"); loadItems(); }, function () {});
       });
       document.getElementById("clear-token").addEventListener("click", function () {
-        saveToken("", "Token supprimé").catch(function () {});
+        saveConfig({ token: "" }, "Token supprimé").catch(function () {});
+      });
+      document.getElementById("reset-root").addEventListener("click", function () {
+        saveConfig({ api_root: "" }, "Route par défaut rétablie").catch(function () {});
       });
       document.getElementById("toggle-token").addEventListener("click", function () {
         var input = document.getElementById("api-token");
