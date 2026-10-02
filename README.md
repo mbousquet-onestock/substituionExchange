@@ -33,6 +33,19 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
      ni séparateurs) dans la langue du contexte, sinon en **fr**.
      Nom, couleur et taille absents de la commande sont complétés de la même façon.
 
+## Parcours de substitution (onglet Articles)
+
+1. **Articles** : les articles de la commande sont affichés en cartes ; on coche un ou plusieurs articles à substituer.
+2. **Substitution** : pour chaque article coché,
+   - les **articles de substitution** sont lus dans la feature `substitution` de la fiche article
+     (identifiants d'articles, liste ou valeurs séparées par `,` / `;`), puis leurs fiches sont chargées via `GET /v2/items` ;
+   - sinon (ou en complément) une **recherche** permet de trouver un autre article pour l'échange :
+     `GET /v2/items` par nom (`pattern` sur `name`) et par référence exacte (`item_ids`).
+3. **Validation** : récapitulatif article d'origine → article de remplacement (même quantité).
+   « Valider la substitution » envoie à la page parente un `postMessage`
+   `{ type: "substitution_validated", substitutions: [{ order_id, line_item_group_id, item_id, quantity, substitute_item_id }] }`.
+   Aucune modification n'est encore envoyée à OneStock.
+
 ## Onglet Config
 
 - **Route de l'API** : racine des appels, par défaut `https://api-qualif.onestock-retail.com`
