@@ -85,7 +85,7 @@ function login(client) {
   if (entry && entry.token) return Promise.resolve(entry.token);
   if (entry && entry.promise) return entry.promise;
   if (!config.user || !config.password) {
-    return Promise.reject(Object.assign(new Error("Aucun token configuré (onglet Config) ni identifiants serveur"), { status: 401 }));
+    return Promise.reject(Object.assign(new Error("Aucun token saisi : renseignez le token API OneStock dans l'onglet Config"), { status: 401 }));
   }
   entry = {};
   entry.promise = (async () => {
@@ -94,7 +94,7 @@ function login(client) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ site_id: client.siteId, user_id: config.user, password: config.password }),
     });
-    if (!res.ok) throw new Error(`Échec du login OneStock (${res.status})`);
+    if (!res.ok) throw Object.assign(new Error(`Échec du login OneStock (${res.status})`), { status: res.status === 401 ? 401 : 502 });
     entry.token = (await res.json()).token;
     return entry.token;
   })().finally(() => { entry.promise = null; if (!entry.token) loginCache.delete(client.siteId); });
@@ -263,7 +263,7 @@ async function handleOrderItems(req, res) {
   const client = createClient(siteId, token);
 
   const orders = await Promise.all(ids.map((id) =>
-    getOrderItems(client, id, lang).catch((e) => ({ id, error: e.message }))));
+    getOrderItems(client, id, lang).catch((e) => ({ id, error: e.message, auth_error: e.status === 401 }))));
   sendJson(res, 200, { orders });
 }
 

@@ -16,12 +16,13 @@ les articles de chaque commande (image, nom, prix | couleur | taille, référenc
    - `GET /v2/items` avec `item_ids` : fiche article, d'où vient **l'URL de l'image**
      (et nom/couleur/taille en repli s'ils manquent sur la commande).
 
-## Token / onglet Config masqué
+## Token / onglet Config
 
-La pop-up contient un onglet **Config** caché, affiché par **Ctrl+Shift+K**
-(cliquer d'abord dans la pop-up) ou par **5 clics rapides dans la zone vide à gauche du bouton Close**.
-On y saisit le token API OneStock (obtenu via `POST /login`) ; il est stocké dans le
-`localStorage` du navigateur et envoyé au serveur à chaque chargement.
+La pop-up a deux onglets : **Articles** et **Config**. Dans **Config**, on saisit le
+token API OneStock (obtenu via `POST /login`) ; il est stocké dans le `localStorage`
+du navigateur et utilisé pour tous les appels aux API OneStock (`/v3/orders`, `/v2/items`).
+Une pastille orange sur l'onglet signale qu'aucun token n'est saisi ; si le token
+manque ou est refusé (401), la pop-up bascule automatiquement sur l'onglet Config.
 
 - Token saisi → utilisé tel quel (erreur « Token invalide ou expiré » si 401).
 - Pas de token → le serveur se connecte avec `ONESTOCK_USER` / `ONESTOCK_PASSWORD` s'ils sont définis.

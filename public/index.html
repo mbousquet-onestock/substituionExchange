@@ -39,7 +39,6 @@
     button:hover { background: var(--panel); }
     .loading { color: var(--muted); padding: 24px 0; text-align: center; }
     .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-    .tabs[hidden] { display: none; }
     .tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); }
     .tab:hover { background: none; color: var(--text); }
     .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--text); }
@@ -52,7 +51,10 @@
     .config .saved { color: #1f8a4c; font-size: 13px; }
     button.primary { background: var(--text); border-color: var(--text); color: #fff; }
     button.primary:hover { background: #374151; }
-    .footer-spacer { flex: 1; }
+    .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #d97706; margin-left: 6px; vertical-align: middle; }
+    .dot[hidden] { display: none; }
+    .config .notice { background: #fdf1e3; color: #8a4b08; border-radius: 4px; padding: 8px 12px; margin: 0 0 12px; font-size: 13px; }
+    .config .notice[hidden] { display: none; }
     @media (max-width: 480px) {
       .item { flex-wrap: wrap; }
       .info { flex-basis: calc(100% - 60px); }
@@ -61,10 +63,9 @@
   </style>
 </head>
 <body>
-  <!-- Onglets masqués : affichés avec Ctrl+Shift+K ou 5 clics rapides en bas à gauche -->
-  <div class="tabs" id="tabs" role="tablist" hidden>
+  <div class="tabs" id="tabs" role="tablist">
     <button class="tab" type="button" role="tab" id="tab-items" aria-controls="panel-items" aria-selected="true">Articles</button>
-    <button class="tab" type="button" role="tab" id="tab-config" aria-controls="panel-config" aria-selected="false">Config</button>
+    <button class="tab" type="button" role="tab" id="tab-config" aria-controls="panel-config" aria-selected="false">Config<span id="token-dot" class="dot" title="Aucun token saisi"></span></button>
   </div>
 
   <div id="panel-items" role="tabpanel">
@@ -72,12 +73,13 @@
   </div>
 
   <form id="panel-config" class="config" role="tabpanel" hidden autocomplete="off">
+    <p id="config-notice" class="notice" role="alert" hidden></p>
     <label for="api-token">Token API OneStock</label>
     <div class="row">
       <input id="api-token" type="password" spellcheck="false" placeholder="ex. bc1c6289ab172z0z1bd9b76838247416">
       <button id="toggle-token" type="button">Afficher</button>
     </div>
-    <p class="hint">Token obtenu via <code>POST /login</code>. Utilisé à la place des identifiants du serveur. Stocké uniquement dans ce navigateur.</p>
+    <p class="hint">Token obtenu via <code>POST /login</code>. Il est utilisé pour tous les appels aux API OneStock (commandes et fiches articles). Stocké uniquement dans ce navigateur.</p>
     <div class="buttons">
       <button class="primary" type="submit">Enregistrer et recharger</button>
       <button id="clear-token" type="button">Effacer</button>
@@ -85,7 +87,7 @@
     </div>
   </form>
 
-  <div class="footer"><span id="secret" class="footer-spacer" aria-hidden="true"></span><button id="close" type="button">Close</button></div>
+  <div class="footer"><button id="close" type="button">Close</button></div>
 
   <template id="icon-info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></template>
   <template id="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></template>
@@ -104,8 +106,7 @@
       function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } }
       function setToken(v) { try { v ? localStorage.setItem(TOKEN_KEY, v) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
 
-      // ---- Onglet de config masqué ----
-      var tabs = document.getElementById("tabs");
+      // ---- Onglet de config ----
       var panels = { items: document.getElementById("panel-items"), config: document.getElementById("panel-config") };
 
       function selectTab(name) {
@@ -116,19 +117,17 @@
         if (name === "config") document.getElementById("api-token").value = getToken();
         resize();
       }
-      function revealConfig() { tabs.hidden = false; selectTab("config"); }
+      function refreshTokenDot() { document.getElementById("token-dot").hidden = !!getToken(); }
+      function showConfig(message) {
+        var notice = document.getElementById("config-notice");
+        notice.textContent = message || "";
+        notice.hidden = !message;
+        selectTab("config");
+        document.getElementById("api-token").focus();
+      }
 
       document.getElementById("tab-items").addEventListener("click", function () { selectTab("items"); });
       document.getElementById("tab-config").addEventListener("click", function () { selectTab("config"); });
-      document.addEventListener("keydown", function (e) {
-        if (e.ctrlKey && e.shiftKey && (e.key === "K" || e.key === "k")) { e.preventDefault(); revealConfig(); }
-      });
-      var clicks = [];
-      document.getElementById("secret").addEventListener("click", function () {
-        var now = Date.now();
-        clicks = clicks.filter(function (t) { return now - t < 2000; }).concat(now);
-        if (clicks.length >= 5) { clicks = []; revealConfig(); }
-      });
 
       document.getElementById("toggle-token").addEventListener("click", function () {
         var input = document.getElementById("api-token");
@@ -139,6 +138,8 @@
       document.getElementById("panel-config").addEventListener("submit", function (e) {
         e.preventDefault();
         setToken(document.getElementById("api-token").value.trim());
+        refreshTokenDot();
+        document.getElementById("config-notice").hidden = true;
         document.getElementById("saved").textContent = "Enregistré";
         setTimeout(function () { document.getElementById("saved").textContent = ""; }, 2000);
         selectTab("items");
@@ -146,6 +147,7 @@
       });
       document.getElementById("clear-token").addEventListener("click", function () {
         setToken("");
+        refreshTokenDot();
         document.getElementById("api-token").value = "";
         document.getElementById("saved").textContent = "Token effacé";
       });
@@ -245,7 +247,12 @@
           })
         })
           .then(function (res) { return res.json().then(function (data) { if (!res.ok) throw new Error(data.error || res.status); return data; }); })
-          .then(function (data) { render(data.orders); })
+          .then(function (data) {
+            render(data.orders);
+            // Token manquant ou refusé par OneStock : on ouvre l'onglet Config
+            var authError = data.orders.filter(function (o) { return o.auth_error; })[0];
+            if (authError) showConfig(authError.error);
+          })
           .catch(function (e) { showError(e.message); });
       }
 
@@ -263,6 +270,7 @@
         window.parent.postMessage({ type: "extension_close" }, "*");
       });
 
+      refreshTokenDot();
       window.parent.postMessage({ type: "extension_ready" }, "*");
     })();
   </script>
