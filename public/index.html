@@ -65,6 +65,9 @@
     .card.selected .check { background: var(--accent); border-color: var(--accent); }
     .card.selected .check::after { content: "✓"; color: #fff; font-size: 14px; font-weight: 700; }
     .check.radio { border-radius: 50%; }
+    .card.disabled { background: var(--panel); }
+    .card.disabled .item { opacity: .55; }
+    .card .reason { font-size: 12px; color: var(--muted); padding: 0 12px 10px 72px; margin-top: -6px; }
     .card.selected .check.radio::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
     .group-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px; text-transform: uppercase; letter-spacing: .03em; }
     .subst { border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px; }
@@ -124,6 +127,8 @@
       var SEARCH_LIMIT = 10;
       // Langue de repli pour les fiches articles (langue par défaut du site, configurée dans /config.html)
       var FALLBACK_LANG = "fr";
+      // Statuts de ligne permettant la substitution (paramètre du site) ; "*" = tous
+      var SUBSTITUTION_STATES = ["*"];
       // Fiches articles (via le proxy générique) ; les commandes passent par le proxy dédié /api/orders/{id}
       var ITEMS_API = "/v2/items";
 
@@ -148,7 +153,9 @@
           extension_id: params.get("extension_id"),
           user_id: params.get("user_id"),
           extension_signature: shared.extension_signature,
-          site_id: params.get("site_id")
+          site_id: params.get("site_id"),
+          // Environnement OneStock (qualif, prod…) : paramètre "env" de l'URL de l'extension, sinon défaut du serveur
+          env: params.get("env") || params.get("environment") || undefined
         };
       }
 
@@ -464,6 +471,19 @@
         }
       }
 
+      function isEligible(item) {
+        return SUBSTITUTION_STATES.indexOf("*") >= 0 || SUBSTITUTION_STATES.indexOf(String(item.state)) >= 0;
+      }
+
+      // Carte non sélectionnable (statut ne permettant pas la substitution)
+      function disabledCard(item) {
+        var card = el("div", "card disabled");
+        card.setAttribute("aria-disabled", "true");
+        card.appendChild(renderItem(item));
+        card.appendChild(el("div", "reason", t("items.not_eligible", { state: item.state })));
+        return card;
+      }
+
       // Étape 1 : sélection des articles à substituer
       function renderStepItems(box) {
         var errors = wizard.orders.filter(function (o) { return o.error; });
@@ -476,6 +496,7 @@
           var list = el("div", "list");
           if (!order.items.length) list.appendChild(el("div", "empty", t("items.none")));
           order.items.forEach(function (item) {
+            if (!isEligible(item)) { list.appendChild(disabledCard(item)); return; }
             list.appendChild(selectableCard(item, wizard.selected[item.key], function () {
               if (wizard.selected[item.key]) { delete wizard.selected[item.key]; delete wizard.replacements[item.key]; }
               else wizard.selected[item.key] = true;
@@ -663,6 +684,7 @@
         // Langue par défaut du site, puis chargement des articles
         get("api/settings", {}).then(function (cfg) {
           if (cfg && cfg.default_lang) FALLBACK_LANG = cfg.default_lang;
+          if (cfg && Array.isArray(cfg.substitution_states)) SUBSTITUTION_STATES = cfg.substitution_states;
         }, function () {}).then(loadItems);
       });
 

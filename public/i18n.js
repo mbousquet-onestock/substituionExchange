@@ -53,7 +53,7 @@
       "err.order_id_missing": "Numéro de commande manquant",
 
       "cfg.title": "Configuration de l'extension OneStock",
-      "cfg.subtitle": "Paramètres enregistrés en base par site (table settings) et journal des appels API.",
+      "cfg.subtitle": "Paramètres enregistrés en base (table settings) par environnement, site et extension, et journal des appels API.",
       "cfg.access": "Accès",
       "cfg.admin_key": "Clé d'administration",
       "cfg.site_placeholder": "Site ID (ex. c00) — vide = valeurs communes",
@@ -90,7 +90,21 @@
       "logs.request": "Requête",
       "logs.response": "Réponse",
       "logs.confirm_site": "Vider le journal du site {id} ?",
-      "logs.confirm_all": "Vider tout le journal ?"
+      "logs.confirm_all": "Vider tout le journal ?",
+      "cfg.extension": "Extension : {id}",
+      "cfg.all_sites": "tous les sites",
+      "cfg.states": "Statuts des lignes permettant la substitution",
+      "cfg.states_hint": "Liste séparée par des virgules (ex. fulfilled, claimed), * = tous les statuts. Vide = valeur commune ou par défaut ({default}).",
+      "cfg.scope.global": "Global (toutes les extensions)",
+      "cfg.scope.extension": "Spécifique à {id}",
+      "cfg.scope_short.global": "global",
+      "cfg.scope_short.extension": "spécifique",
+      "cfg.level.site": "site",
+      "cfg.level.common": "commun",
+      "cfg.origin": "{scope} · {level}",
+      "err.env_invalid": "Environnement inconnu : {env}",
+      "err.invalid_states": "Statuts invalides : liste séparée par des virgules (ex. fulfilled, claimed) ou * pour tous",
+      "items.not_eligible": "Substitution impossible pour le statut « {state} »"
     },
     en: {
       "title.popup": "Item substitution",
@@ -140,7 +154,7 @@
       "err.order_id_missing": "Missing order number",
 
       "cfg.title": "OneStock extension configuration",
-      "cfg.subtitle": "Settings stored in the database per site (settings table) and API call log.",
+      "cfg.subtitle": "Settings stored in the database (settings table) per environment, site and extension, and API call log.",
       "cfg.access": "Access",
       "cfg.admin_key": "Admin key",
       "cfg.site_placeholder": "Site ID (e.g. c00) — empty = common values",
@@ -177,7 +191,21 @@
       "logs.request": "Request",
       "logs.response": "Response",
       "logs.confirm_site": "Clear the log of site {id}?",
-      "logs.confirm_all": "Clear the whole log?"
+      "logs.confirm_all": "Clear the whole log?",
+      "cfg.extension": "Extension: {id}",
+      "cfg.all_sites": "all sites",
+      "cfg.states": "Order line statuses allowing substitution",
+      "cfg.states_hint": "Comma-separated list (e.g. fulfilled, claimed), * = all statuses. Empty = common or default value ({default}).",
+      "cfg.scope.global": "Global (all extensions)",
+      "cfg.scope.extension": "Specific to {id}",
+      "cfg.scope_short.global": "global",
+      "cfg.scope_short.extension": "specific",
+      "cfg.level.site": "site",
+      "cfg.level.common": "common",
+      "cfg.origin": "{scope} · {level}",
+      "err.env_invalid": "Unknown environment: {env}",
+      "err.invalid_states": "Invalid statuses: comma-separated list (e.g. fulfilled, claimed) or * for all",
+      "items.not_eligible": "Substitution not available for status “{state}”"
     },
     es: {
       "title.popup": "Sustitución de artículos",
@@ -210,7 +238,8 @@
       "valid.done": "Sustitución confirmada para {n} artículo(s).",
       "error.prefix": "Error: {error}",
       "err.onestock_401": "Token rechazado por OneStock (401): compruebe el token del sitio en la página de configuración (/config.html)",
-      "err.token_missing": "No hay token registrado para el sitio {site_id}: indíquelo en la página de configuración (/config.html)"
+      "err.token_missing": "No hay token registrado para el sitio {site_id}: indíquelo en la página de configuración (/config.html)",
+      "items.not_eligible": "Sustitución no disponible para el estado «{state}»"
     },
     it: {
       "title.popup": "Sostituzione articoli",
@@ -243,7 +272,8 @@
       "valid.done": "Sostituzione confermata per {n} articolo/i.",
       "error.prefix": "Errore: {error}",
       "err.onestock_401": "Token rifiutato da OneStock (401): verifica il token del sito nella pagina di configurazione (/config.html)",
-      "err.token_missing": "Nessun token registrato per il sito {site_id}: inseriscilo nella pagina di configurazione (/config.html)"
+      "err.token_missing": "Nessun token registrato per il sito {site_id}: inseriscilo nella pagina di configurazione (/config.html)",
+      "items.not_eligible": "Sostituzione non disponibile per lo stato «{state}»"
     },
     de: {
       "title.popup": "Artikelersatz",
@@ -276,7 +306,8 @@
       "valid.done": "Ersatz für {n} Artikel bestätigt.",
       "error.prefix": "Fehler: {error}",
       "err.onestock_401": "Token von OneStock abgelehnt (401): Prüfen Sie das Token der Site auf der Konfigurationsseite (/config.html)",
-      "err.token_missing": "Kein Token für Site {site_id} gespeichert: Tragen Sie es auf der Konfigurationsseite ein (/config.html)"
+      "err.token_missing": "Kein Token für Site {site_id} gespeichert: Tragen Sie es auf der Konfigurationsseite ein (/config.html)",
+      "items.not_eligible": "Ersatz für den Status „{state}“ nicht möglich"
     }
   };
 

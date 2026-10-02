@@ -62,26 +62,52 @@ de OneStock (états des lignes, noms, couleurs…) sont affichées telles quelle
 
 ## Page de configuration (`/config.html`)
 
-La pop-up n'a plus d'onglet de configuration : tout se règle dans `/config.html`
-(lien direct possible : `/config.html?site_id=c00`), protégée par la clé `ADMIN_KEY` (en-tête `X-Admin-Key`).
+La pop-up n'a pas d'onglet de configuration : tout se règle dans `/config.html`
+(lien direct : `/config.html?env=qualif&site_id=c00`), protégée par la clé `ADMIN_KEY` (en-tête `X-Admin-Key`).
 
-Paramètres stockés **par site** dans la table `settings` (`site_id`, `key`, `value`) :
+### Table `settings` (partagée entre applicatifs)
 
-| Paramètre | Clé | Défaut |
-|---|---|---|
-| Route de l'API | `onestock_api_root` | `https://api-qualif.onestock-retail.com` (`ONESTOCK_API_ROOT`) |
-| Langue par défaut (repli des fiches articles) | `default_lang` | `fr` (`DEFAULT_LANG`) |
-| Token API OneStock | `onestock_token` | — |
+| Colonne | Rôle |
+|---|---|
+| `extension_id` | id de l'extension (`substitution`, variable `EXTENSION_ID`) ou `*` pour un paramètre **global** à toutes les extensions |
+| `environment` | environnement OneStock (`qualif`, `prod`…) |
+| `site_id` | site OneStock, ou vide pour la valeur **commune** à tous les sites de l'environnement |
+| `key` / `value` | paramètre et valeur |
+| `scope` | colonne calculée : `global` (`extension_id = '*'`) ou `extension` |
 
-Les lignes **route de l'API** et **langue par défaut** sont créées automatiquement pour chaque site
-(première utilisation par la pop-up ou ouverture dans `/config.html`), avec la valeur commune (`site_id` vide)
-ou à défaut la valeur par défaut. Vider un de ces champs dans `/config.html` réenregistre la valeur commune / par défaut.
-Le token, lui, n'est stocké que s'il est saisi (sinon le site utilise le token commun).
-La page indique la provenance de chaque valeur (propre au site / commune / par défaut).
-Le token n'est jamais renvoyé au navigateur. L'ancienne table `settings` (sans `site_id`) est migrée
-automatiquement : ses valeurs deviennent les valeurs communes.
+Clé primaire : (`extension_id`, `environment`, `site_id`, `key`).
 
-Le journal des appels API (500 derniers, avec le `site_id`) est consultable par site ou pour tous les sites.
+Résolution d'un paramètre, du plus précis au plus général :
+extension + site → global + site → extension + commun → global + commun → valeur par défaut.
+
+| Paramètre | Clé | Portée par défaut | Défaut |
+|---|---|---|---|
+| Route de l'API | `onestock_api_root` | global | qualif : `https://api-qualif.onestock-retail.com`, prod : `https://api.onestock-retail.com` |
+| Langue par défaut (repli des fiches articles) | `default_lang` | global | `fr` (`DEFAULT_LANG`) |
+| Statuts des lignes permettant la substitution | `substitution_states` | extension | `*` = tous (`DEFAULT_SUBSTITUTION_STATES`) |
+| Token API OneStock | `onestock_token` | global | — |
+
+Dans `/config.html`, chaque paramètre a un sélecteur de portée : **Global (toutes les extensions)** ou
+**Spécifique à substitution**. Passer un paramètre en global supprime la valeur spécifique de l'extension
+(qui la masquerait) ; une valeur spécifique laisse la valeur globale en place pour les autres extensions.
+La provenance de chaque valeur est affichée (global / spécifique · site / commun, ou par défaut).
+
+La route, la langue et les statuts sont créés automatiquement pour chaque site (première utilisation ou
+ouverture dans `/config.html`). Le token n'est stocké que s'il est saisi. Les anciennes lignes sont migrées
+automatiquement : elles deviennent globales, dans l'environnement `ONESTOCK_ENV`.
+
+### Environnement de la pop-up
+
+La pop-up lit l'environnement dans le paramètre `env` de l'URL de l'extension (ex. déclarer
+`https://<app>/?env=prod` dans le back-office de production), sinon `ONESTOCK_ENV` (défaut `qualif`).
+Environnements acceptés : `ONESTOCK_ENVIRONMENTS` (défaut `qualif,prod`).
+
+### Statuts permettant la substitution
+
+À l'étape **Articles**, seules les lignes dont le statut figure dans `substitution_states` sont sélectionnables ;
+les autres sont grisées avec le motif « Substitution impossible pour le statut … ».
+
+Le journal des appels API (500 derniers) enregistre l'extension, l'environnement et le site.
 
 ## Base de données (Vercel)
 
@@ -95,8 +121,11 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 |---|---|
 | `POSTGRES_URL` / `DATABASE_URL` | connexion Postgres (fournie par Vercel Storage) |
 | `ONESTOCK_SITE_ID` | ex. `c00`. Si absent, le `site_id` transmis par OneStock dans l'URL est utilisé |
-| `ONESTOCK_API_ROOT` | route de l'API par défaut (défaut `https://api-qualif.onestock-retail.com`) ; la valeur configurée pour le site est prioritaire |
+| `ONESTOCK_API_ROOT` | force la route de l'API par défaut pour tous les environnements ; la valeur configurée pour le site est prioritaire |
 | `ONESTOCK_GET_TRANSPORT` | `xget` (défaut) ou `override` (`POST` + `X-HTTP-Method-Override: GET`) |
+| `EXTENSION_ID` | id de l'extension dans `settings` (défaut `substitution`) |
+| `ONESTOCK_ENV` / `ONESTOCK_ENVIRONMENTS` | environnement par défaut (défaut `qualif`) / environnements acceptés (défaut `qualif,prod`) |
+| `DEFAULT_SUBSTITUTION_STATES` | statuts permettant la substitution si non configurés (défaut `*`) |
 | `ADMIN_KEY` | clé d'accès à `/config.html` (**obligatoire sur Vercel**, sinon la page est refusée) |
 | `DEFAULT_LANG` | langue par défaut si non configurée (défaut `fr`) |
 | `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |

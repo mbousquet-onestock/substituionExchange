@@ -53,47 +53,83 @@
     .log pre { margin: 0 10px 10px; background: #0f172a; color: #e2e8f0; padding: 8px 10px; border-radius: 4px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 320px; overflow: auto; }
     .log .label { margin: 4px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
     .empty { color: var(--muted); padding: 12px; }
+    select { font: inherit; padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
+    .param { border-top: 1px solid var(--panel); padding-top: 12px; margin-top: 12px; }
+    .param:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+    .param-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .param-head label { margin: 0; flex: 1; }
+    .param-head select { font-size: 13px; padding: 4px 6px; }
+    .meta { font-size: 13px; color: var(--muted); }
+    .meta code { color: var(--text); }
+    .grid { display: grid; grid-template-columns: 160px 1fr auto; gap: 8px; align-items: center; }
+    @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
     @media (max-width: 560px) { .log .time, .log .site { display: none; } .row { flex-wrap: wrap; } }
   </style>
 </head>
 <body>
 <main>
   <h1 data-i18n="cfg.title">Configuration de l'extension OneStock</h1>
-  <p class="sub" data-i18n="cfg.subtitle">Paramètres enregistrés en base par site (table settings) et journal des appels API.</p>
+  <p class="sub" data-i18n="cfg.subtitle"></p>
   <p id="notice" class="notice" role="alert" hidden></p>
 
   <section class="card">
     <h2 data-i18n="cfg.access">Accès</h2>
     <form id="access-form" autocomplete="off">
       <label for="admin-key" data-i18n="cfg.admin_key">Clé d'administration</label>
-      <div class="row">
-        <input id="admin-key" type="password" spellcheck="false" placeholder="ADMIN_KEY">
-        <input id="site-id" list="sites" aria-label="Site ID" spellcheck="false" data-i18n-placeholder="cfg.site_placeholder">
-        <datalist id="sites"></datalist>
+      <input id="admin-key" type="password" spellcheck="false" placeholder="ADMIN_KEY">
+      <div class="grid" style="margin-top: 12px">
+        <select id="env" aria-label="Environment"></select>
+        <input id="site-id" list="sites" spellcheck="false" aria-label="Site ID" data-i18n-placeholder="cfg.site_placeholder">
         <button class="accent" type="submit" data-i18n="cfg.load">Charger</button>
       </div>
+      <datalist id="sites"></datalist>
       <p class="hint" data-i18n="cfg.common_hint"></p>
+      <p class="meta" id="extension-meta"></p>
     </form>
   </section>
 
   <section class="card" id="settings-card" hidden>
     <h2 id="settings-title">Site</h2>
     <form id="settings-form" autocomplete="off">
-      <label for="api-root"><span data-i18n="cfg.api_root">Route de l'API</span> <span id="src-api-root" class="source"></span></label>
-      <input id="api-root" type="url" spellcheck="false">
-      <p class="hint" id="hint-api-root"></p>
-
-      <label for="default-lang"><span data-i18n="cfg.default_lang">Langue par défaut</span> <span id="src-default-lang" class="source"></span></label>
-      <input id="default-lang" maxlength="2" spellcheck="false" style="max-width: 120px">
-      <p class="hint" id="hint-default-lang"></p>
-
-      <label for="api-token"><span data-i18n="cfg.token">Token API OneStock</span> <span id="src-token" class="source"></span></label>
-      <p id="token-state" class="state"></p>
-      <div class="row">
-        <input id="api-token" type="password" spellcheck="false" data-i18n-placeholder="cfg.token_placeholder">
-        <button id="toggle-token" type="button" data-i18n="cfg.show">Afficher</button>
+      <div class="param" data-param="api_root">
+        <div class="param-head">
+          <label for="p-api_root"><span data-i18n="cfg.api_root"></span> <span class="source" data-source></span></label>
+          <select data-scope aria-label="Scope"></select>
+        </div>
+        <input id="p-api_root" type="url" spellcheck="false">
+        <p class="hint" id="hint-api_root"></p>
       </div>
-      <p class="hint" data-i18n="cfg.token_hint"></p>
+
+      <div class="param" data-param="default_lang">
+        <div class="param-head">
+          <label for="p-default_lang"><span data-i18n="cfg.default_lang"></span> <span class="source" data-source></span></label>
+          <select data-scope aria-label="Scope"></select>
+        </div>
+        <input id="p-default_lang" maxlength="2" spellcheck="false" style="max-width: 120px">
+        <p class="hint" id="hint-default_lang"></p>
+      </div>
+
+      <div class="param" data-param="substitution_states">
+        <div class="param-head">
+          <label for="p-substitution_states"><span data-i18n="cfg.states"></span> <span class="source" data-source></span></label>
+          <select data-scope aria-label="Scope"></select>
+        </div>
+        <input id="p-substitution_states" spellcheck="false" placeholder="fulfilled, claimed">
+        <p class="hint" id="hint-substitution_states"></p>
+      </div>
+
+      <div class="param" data-param="token">
+        <div class="param-head">
+          <label for="p-token"><span data-i18n="cfg.token"></span> <span class="source" data-source></span></label>
+          <select data-scope aria-label="Scope"></select>
+        </div>
+        <p id="token-state" class="state"></p>
+        <div class="row">
+          <input id="p-token" type="password" spellcheck="false" data-i18n-placeholder="cfg.token_placeholder">
+          <button id="toggle-token" type="button" data-i18n="cfg.show">Afficher</button>
+        </div>
+        <p class="hint" data-i18n="cfg.token_hint"></p>
+      </div>
 
       <div class="buttons">
         <button class="accent" type="submit" data-i18n="cfg.save">Enregistrer</button>
@@ -116,7 +152,10 @@
 <script>
   (function () {
     var KEY_STORAGE = "onestock_admin_key";
-    var siteId = "";
+    var PARAMS = ["api_root", "default_lang", "substitution_states", "token"];
+    var meta = null;
+    var current = { env: "", site: "" };
+    var lastCfg = null;
     var qs = new URLSearchParams(location.search);
     // Langue de la page : ?lang= (ex. lien depuis OneStock), sinon langue du navigateur
     var t = I18N.create(qs.get("lang") || navigator.language);
@@ -132,8 +171,8 @@
     }
     function storedKey() { try { return sessionStorage.getItem(KEY_STORAGE) || ""; } catch (e) { return ""; } }
     function storeKey(v) { try { sessionStorage.setItem(KEY_STORAGE, v); } catch (e) {} }
-
     function notice(msg) { $("notice").textContent = msg || ""; $("notice").hidden = !msg; }
+    function paramBox(name) { return document.querySelector('.param[data-param="' + name + '"]'); }
 
     function api(url, payload) {
       return fetch(url, {
@@ -148,39 +187,62 @@
       });
     }
 
-    function showSource(id, source) {
-      var n = $(id);
-      n.className = "source " + (source || "");
-      n.textContent = source ? t("cfg.source." + source) : "";
+    // ---------- Métadonnées : extension, environnements, portées ----------
+
+    function loadMeta() {
+      return api("api/admin/config", { action: "meta" }).then(function (m) {
+        meta = m;
+        var sel = $("env");
+        sel.innerHTML = "";
+        m.environments.forEach(function (env) { var o = el("option", null, env); o.value = env; sel.appendChild(o); });
+        sel.value = qs.get("env") && m.environments.indexOf(qs.get("env")) >= 0 ? qs.get("env") : m.default_env;
+        $("extension-meta").textContent = t("cfg.extension", { id: m.extension_id });
+        PARAMS.forEach(function (name) {
+          var s = paramBox(name).querySelector("[data-scope]");
+          s.innerHTML = "";
+          [["global", t("cfg.scope.global")], ["extension", t("cfg.scope.extension", { id: m.extension_id })]].forEach(function (o) {
+            var opt = el("option", null, o[1]); opt.value = o[0]; s.appendChild(opt);
+          });
+        });
+      });
+    }
+
+    // ---------- Affichage d'un site ----------
+
+    function showSource(name, f) {
+      var n = paramBox(name).querySelector("[data-source]");
+      if (!f || (!f.level && !f.set)) { n.className = "source"; n.textContent = ""; return; }
+      var level = f.level || "site";
+      n.className = "source " + (level === "default" ? "default" : level === "common" ? "common" : "site");
+      n.textContent = level === "default" ? t("cfg.source.default")
+        : t("cfg.origin", { scope: t("cfg.scope_short." + f.scope), level: t("cfg.level." + level) });
     }
 
     function showSettings(cfg) {
+      lastCfg = cfg;
       $("settings-card").hidden = false;
       $("logs-card").hidden = false;
-      $("settings-title").textContent = cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.common");
-      $("logs-title").textContent = cfg.site_id ? t("logs.title_site", { id: cfg.site_id }) : t("logs.title_all");
-      // Valeurs enregistrées pour le site (les valeurs par défaut sont en placeholder)
-      $("api-root").value = cfg.api_root.value;
-      $("api-root").placeholder = cfg.defaults.api_root;
-      $("default-lang").value = cfg.default_lang.value;
-      $("default-lang").placeholder = cfg.defaults.default_lang;
-      $("hint-api-root").textContent = t("cfg.api_root_hint", { "default": cfg.defaults.api_root });
-      $("hint-default-lang").textContent = t("cfg.default_lang_hint", { "default": cfg.defaults.default_lang });
-      showSource("src-api-root", cfg.api_root.source);
-      showSource("src-default-lang", cfg.default_lang.source);
-      showSource("src-token", cfg.token.set ? cfg.token.source : "");
-      var st = $("token-state");
-      st.innerHTML = "";
-      if (cfg.token.set) {
-        st.textContent = t("cfg.token_set", { preview: cfg.token.preview }) +
-          (cfg.token.updated_at ? t("cfg.token_updated", { date: new Date(cfg.token.updated_at).toLocaleString(t.lang) }) : "");
-      } else {
-        st.textContent = t("cfg.token_none");
-      }
+      var where = (cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.common")) + " — " + cfg.environment;
+      $("settings-title").textContent = where;
+      $("logs-title").textContent = t("logs.title") + " — " + (cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.all_sites")) + " — " + cfg.environment;
+      ["api_root", "default_lang", "substitution_states"].forEach(function (name) {
+        $("p-" + name).value = cfg[name].value;
+        $("p-" + name).placeholder = cfg.defaults[name];
+        paramBox(name).querySelector("[data-scope]").value = cfg[name].scope;
+        showSource(name, cfg[name]);
+      });
+      $("hint-api_root").textContent = t("cfg.api_root_hint", { "default": cfg.defaults.api_root });
+      $("hint-default_lang").textContent = t("cfg.default_lang_hint", { "default": cfg.defaults.default_lang });
+      $("hint-substitution_states").textContent = t("cfg.states_hint", { "default": cfg.defaults.substitution_states });
+      paramBox("token").querySelector("[data-scope]").value = cfg.token.scope;
+      showSource("token", cfg.token.set ? cfg.token : null);
+      $("token-state").textContent = cfg.token.set
+        ? t("cfg.token_set", { preview: cfg.token.preview }) + (cfg.token.updated_at ? t("cfg.token_updated", { date: new Date(cfg.token.updated_at).toLocaleString(t.lang) }) : "")
+        : t("cfg.token_none");
     }
 
     function loadSites() {
-      return api("api/admin/config", { action: "sites" }).then(function (data) {
+      return api("api/admin/config", { action: "sites", env: current.env }).then(function (data) {
         var dl = $("sites");
         dl.innerHTML = "";
         data.sites.forEach(function (s) { if (s.site_id) dl.appendChild(el("option", null, s.site_id)); });
@@ -188,17 +250,19 @@
     }
 
     function load() {
-      siteId = $("site-id").value.trim();
       notice("");
-      return api("api/admin/config", { action: "get", site_id: siteId })
-        .then(function (cfg) { storeKey($("admin-key").value); showSettings(cfg); loadSites(); return loadLogs(); })
+      var ready = meta ? Promise.resolve() : loadMeta();
+      return ready.then(function () {
+        current = { env: $("env").value, site: $("site-id").value.trim() };
+        return api("api/admin/config", { action: "get", env: current.env, site_id: current.site });
+      }).then(function (cfg) { storeKey($("admin-key").value); showSettings(cfg); loadSites(); return loadLogs(); })
         .catch(function (e) { notice(e.message); });
     }
 
-    function save(changes, message) {
-      return api("api/admin/config", Object.assign({ action: "set", site_id: siteId }, changes)).then(function (cfg) {
+    function save(params, message) {
+      return api("api/admin/config", { action: "set", env: current.env, site_id: current.site, params: params }).then(function (cfg) {
         showSettings(cfg);
-        $("api-token").value = "";
+        $("p-token").value = "";
         notice("");
         $("saved").textContent = message;
         setTimeout(function () { $("saved").textContent = ""; }, 2500);
@@ -216,7 +280,7 @@
         var d = el("details", "log");
         var s = el("summary");
         s.appendChild(el("span", "time", new Date(log.created_at).toLocaleString(t.lang)));
-        if (!siteId) s.appendChild(el("span", "site", log.site_id || "—"));
+        if (!current.site) s.appendChild(el("span", "site", log.site_id || "—"));
         s.appendChild(el("span", "method", log.method));
         s.appendChild(el("span", "url", log.url));
         var ok = log.status >= 200 && log.status < 300;
@@ -237,7 +301,7 @@
     }
 
     function loadLogs() {
-      return api("api/admin/logs", { action: "list", site_id: siteId, limit: 100 })
+      return api("api/admin/logs", { action: "list", env: current.env, site_id: current.site, limit: 100 })
         .then(function (data) { renderLogs(data.logs); })
         .catch(function (e) { $("logs").innerHTML = ""; $("logs").appendChild(el("div", "empty", t("error.prefix", { error: e.message }))); });
     }
@@ -245,27 +309,37 @@
     // ---------- Événements ----------
 
     $("access-form").addEventListener("submit", function (e) { e.preventDefault(); load(); });
+    $("env").addEventListener("change", function () { if (lastCfg) load(); });
     $("settings-form").addEventListener("submit", function (e) {
       e.preventDefault();
-      var changes = { api_root: $("api-root").value.trim(), default_lang: $("default-lang").value.trim() };
-      var token = $("api-token").value.trim();
-      if (token) changes.token = token;
-      save(changes, t("cfg.saved"));
+      var params = {};
+      ["api_root", "default_lang", "substitution_states"].forEach(function (name) {
+        params[name] = { value: $("p-" + name).value.trim(), scope: paramBox(name).querySelector("[data-scope]").value };
+      });
+      var token = $("p-token").value.trim();
+      var tokenScope = paramBox("token").querySelector("[data-scope]").value;
+      // Token : enregistré s'il est saisi ; un changement de portée seul réécrit le token actuel n'est pas possible
+      // (il n'est jamais renvoyé au navigateur) : il faut le ressaisir.
+      if (token) params.token = { value: token, scope: tokenScope };
+      save(params, t("cfg.saved"));
     });
-    $("clear-token").addEventListener("click", function () { save({ token: "" }, t("cfg.token_cleared")); });
+    $("clear-token").addEventListener("click", function () {
+      var scope = lastCfg && lastCfg.token.set ? lastCfg.token.scope : paramBox("token").querySelector("[data-scope]").value;
+      save({ token: { value: "", scope: scope } }, t("cfg.token_cleared"));
+    });
     $("toggle-token").addEventListener("click", function () {
-      var input = $("api-token");
+      var input = $("p-token");
       var show = input.type === "password";
       input.type = show ? "text" : "password";
       this.textContent = show ? t("cfg.hide") : t("cfg.show");
     });
     $("refresh-logs").addEventListener("click", loadLogs);
     $("clear-logs").addEventListener("click", function () {
-      if (!confirm(siteId ? t("logs.confirm_site", { id: siteId }) : t("logs.confirm_all"))) return;
-      api("api/admin/logs", { action: "clear", site_id: siteId }).then(function (d) { renderLogs(d.logs); }).catch(function (e) { notice(e.message); });
+      if (!confirm(current.site ? t("logs.confirm_site", { id: current.site }) : t("logs.confirm_all"))) return;
+      api("api/admin/logs", { action: "clear", env: current.env, site_id: current.site }).then(function (d) { renderLogs(d.logs); }).catch(function (e) { notice(e.message); });
     });
 
-    // Pré-remplissage : clé de la session, site depuis ?site_id=
+    // Pré-remplissage : clé de la session, ?env= et ?site_id=
     $("admin-key").value = storedKey();
     if (qs.get("site_id")) $("site-id").value = qs.get("site_id");
     if ($("admin-key").value || qs.get("site_id")) load();

@@ -1,12 +1,15 @@
 "use strict";
 
 // POST /api/admin/config  (en-tête X-Admin-Key)
-// { action: "sites" }                                -> { sites: [{ site_id, updated_at }] }
-// { action: "get", site_id }                          -> configuration du site
-// { action: "set", site_id, token?, api_root?, default_lang? }
-//   route / langue vides = retour à la valeur commune, puis par défaut (enregistrée pour le site) ;
-//   token vide = suppression
-// site_id "" = valeurs communes à tous les sites.
+// { action: "meta" }                     -> { extension_id, environments, default_env, params }
+// { action: "sites", env }               -> { sites: [{ site_id, updated_at }] }
+// { action: "get", env, site_id }        -> configuration du site
+// { action: "set", env, site_id, params: { api_root?, default_lang?, substitution_states?, token? } }
+//   chaque paramètre : { value, scope: "global" | "extension" }
+//   global = valable pour toutes les extensions (extension_id "*"), extension = propre à cette extension.
+//   route / langue / statuts vides : retour à la valeur commune puis par défaut (réenregistrée pour le site) ;
+//   token vide : suppression.
+// site_id "" = valeurs communes à tous les sites de l'environnement.
 
 const { adminEndpoint } = require("../../lib/http");
 const db = require("../../lib/db");
@@ -22,52 +25,80 @@ function checkSiteId(siteId) {
   return id;
 }
 
-async function describe(siteId) {
-  // Route de l'API et langue par défaut toujours présentes en base pour le site
-  await onestock.ensureSiteDefaults(siteId, true);
-  const s = await db.getSiteSettings(siteId);
-  const field = (f, fallback) => ({
-    value: f ? f.value : fallback,
-    updated_at: f ? f.updated_at : null,
-    source: f ? (f.inherited ? "common" : "site") : "default",
-  });
+function bad(code, error) {
+  return Object.assign(new Error(error), { status: 400, code });
+}
+
+// Validation / normalisation de la valeur d'un paramètre ("" = suppression)
+function normalize(name, raw) {
+  const v = String(raw == null ? "" : raw).trim();
+  if (!v) return "";
+  if (name === "api_root") {
+    const root = onestock.normalizeApiRoot(v);
+    if (root === null) throw bad("invalid_api_root", "Route de l'API invalide : URL https en *.onestock-retail.com attendue (ex. https://api-qualif.onestock-retail.com)");
+    return root;
+  }
+  if (name === "default_lang") {
+    const lang = onestock.normalizeLang(v);
+    if (lang === null) throw bad("invalid_lang", "Langue invalide : code à 2 lettres attendu (ex. fr)");
+    return lang;
+  }
+  if (name === "substitution_states") {
+    const states = onestock.normalizeStates(v);
+    if (states === null) throw bad("invalid_states", "Statuts invalides : liste séparée par des virgules (ex. fulfilled, claimed) ou * pour tous");
+    return states.join(",");
+  }
+  if (name === "token") {
+    if (!/^[\w.+/=-]{1,1024}$/.test(v)) throw bad("invalid_token_format", "Format de token invalide");
+    return v;
+  }
+  return v;
+}
+
+async function describe(ctx) {
+  // Paramètres par défaut toujours présents en base pour le site
+  await onestock.ensureSiteDefaults(ctx, true);
+  const s = await db.getSettings(ctx);
+  const defaults = onestock.defaultsFor(ctx.environment);
+  const field = (name) => {
+    const f = s[name];
+    return f
+      ? { value: f.value, updated_at: f.updated_at, scope: f.scope, level: f.level }
+      : { value: defaults[name], updated_at: null, scope: db.PARAMS[name].scope, level: "default" };
+  };
   return {
-    site_id: siteId,
+    extension_id: ctx.extension_id,
+    environment: ctx.environment,
+    site_id: ctx.site_id,
     token: s.token
-      ? { set: true, preview: preview(s.token.value), updated_at: s.token.updated_at, source: s.token.inherited ? "common" : "site" }
-      : { set: false },
-    api_root: field(s.api_root, onestock.DEFAULT_API_ROOT),
-    default_lang: field(s.default_lang, onestock.DEFAULT_LANG),
-    defaults: { api_root: onestock.DEFAULT_API_ROOT, default_lang: onestock.DEFAULT_LANG },
+      ? { set: true, preview: preview(s.token.value), updated_at: s.token.updated_at, scope: s.token.scope, level: s.token.level }
+      : { set: false, scope: db.PARAMS.token.scope },
+    api_root: field("api_root"),
+    default_lang: field("default_lang"),
+    substitution_states: field("substitution_states"),
+    defaults,
   };
 }
 
 module.exports = adminEndpoint(async (req) => {
-  if (req.action === "sites") return { data: { sites: await db.listSites() } };
+  if (req.action === "meta") {
+    return { data: {
+      extension_id: onestock.EXTENSION_ID,
+      environments: onestock.ENVIRONMENTS,
+      default_env: onestock.DEFAULT_ENV,
+      params: Object.fromEntries(Object.entries(db.PARAMS).map(([k, p]) => [k, { key: p.key, scope: p.scope }])),
+    } };
+  }
+  const ctx = onestock.context(checkSiteId(req.site_id), req.env);
+  if (req.action === "sites") return { data: { sites: await db.listSites(ctx) } };
 
-  const siteId = checkSiteId(req.site_id);
   if (req.action === "set") {
     const changes = {};
-    if (req.api_root !== undefined) {
-      const raw = String(req.api_root || "").trim();
-      const root = raw ? onestock.normalizeApiRoot(raw) : "";
-      if (root === null) {
-        return { status: 400, data: { error: "Route de l'API invalide : URL https en *.onestock-retail.com attendue (ex. https://api-qualif.onestock-retail.com)", code: "invalid_api_root" } };
-      }
-      changes.api_root = root;
-    }
-    if (req.default_lang !== undefined) {
-      const raw = String(req.default_lang || "").trim();
-      const lang = raw ? onestock.normalizeLang(raw) : "";
-      if (lang === null) return { status: 400, data: { error: "Langue invalide : code à 2 lettres attendu (ex. fr)", code: "invalid_lang" } };
-      changes.default_lang = lang;
-    }
-    if (req.token !== undefined) {
-      const token = String(req.token || "").trim();
-      if (token && !/^[\w.+/=-]{1,1024}$/.test(token)) return { status: 400, data: { error: "Format de token invalide", code: "invalid_token_format" } };
-      changes.token = token;
-    }
-    await db.setSiteSettings(siteId, changes);
+    Object.entries(req.params || {}).forEach(([name, p]) => {
+      if (!db.PARAMS[name] || !p || p.value === undefined) return;
+      changes[name] = { value: normalize(name, p.value), scope: p.scope };
+    });
+    await db.setSettings(ctx, changes);
   }
-  return { data: await describe(siteId) };
+  return { data: await describe(ctx) };
 });

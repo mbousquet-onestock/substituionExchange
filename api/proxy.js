@@ -8,6 +8,6 @@ const { endpoint } = require("../lib/http");
 const onestock = require("../lib/onestock");
 
 module.exports = endpoint(async (req) => {
-  const result = await onestock.call({ method: req.method, path: req.path, body: req.body, siteId: req.site_id });
+  const result = await onestock.call({ method: req.method, path: req.path, body: req.body, siteId: req.site_id, env: req.env });
   return { status: 200, data: result };
 });

@@ -16,6 +16,7 @@ module.exports = endpoint(async (params) => {
     path: `/v3/orders/${encodeURIComponent(id)}`,
     body: { fields: onestock.orderFields(), item_features_lang: lang },
     siteId: params.site_id,
+    env: params.env,
   });
   return { data: result };
 }, { methods: ["GET", "POST"] });
