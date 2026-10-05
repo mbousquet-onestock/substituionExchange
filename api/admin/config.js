@@ -89,7 +89,7 @@ async function describe(ctx) {
     environment: ctx.environment,
     site_id: ctx.site_id,
     token: s.token
-      ? { set: true, ...tokenPreview(s.token.value), updated_at: s.token.updated_at, scope: s.token.scope, level: s.token.level }
+      ? { set: true, ...tokenPreview(s.token.value), updated_at: s.token.updated_at, scope: s.token.scope, level: s.token.level, row: s.token.row }
       : { set: false, scope: db.PARAMS.token.scope },
     api_root: field("api_root"),
     default_lang: field("default_lang"),
@@ -116,7 +116,7 @@ module.exports = adminEndpoint(async (req) => {
     try {
       const cfg = await onestock.siteConfig(ctx.site_id, ctx.environment);
       if (cfg.token_stored) {
-        token = { found: true, stored: secret.fingerprint(cfg.token_stored) };
+        token = { found: true, row: cfg.raw.token && cfg.raw.token.row, stored: secret.fingerprint(cfg.token_stored) };
         try {
           const d = secret.decrypt(cfg.token_stored);
           token = { ...token, encrypted: !!d.format, format: d.format, decrypted: true, value: secret.fingerprint(d.value) };

@@ -146,6 +146,19 @@ les autres sont grisées avec le motif « Substitution impossible pour le statut
 
 Le journal des appels API (500 derniers) enregistre l'extension, l'environnement et le site.
 
+### Lecture du token (partagé entre applicatifs)
+
+Le token est lu comme dans les autres applicatifs utilisant la table, **toutes extensions confondues** :
+
+```sql
+SELECT value FROM settings
+WHERE key = 'onestock_token' AND environment = $env AND (site_id = $site OR site_id IN ('*', ''))
+ORDER BY (site_id = $site) DESC, (site_id = '*') DESC, updated_at DESC LIMIT 1
+```
+
+`site_id = '*'` (comme `''`) désigne la valeur commune. `/config.html` et le diagnostic indiquent la ligne
+utilisée (`extension_id`, `site_id`).
+
 ### Token chiffré (`SETTINGS_ENCRYPTION_KEY`)
 
 Quand `SETTINGS_ENCRYPTION_KEY` est définie, `onestock_token` est déchiffré au moment de chaque appel OneStock

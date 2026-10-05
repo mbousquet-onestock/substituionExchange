@@ -130,7 +130,8 @@
       "valid.parent_missing": "Attention : aucun parent_order_id trouvé sur la commande d'origine, la sous-commande a été créée sans numéro parent (voir le journal des appels dans /config.html).",
       "cfg.token_encrypted": "chiffré (SETTINGS_ENCRYPTION_KEY)",
       "err.token_decrypt_failed": "Impossible de déchiffrer onestock_token avec SETTINGS_ENCRYPTION_KEY",
-      "diag.order_placeholder": "Commande à tester (ex. CKC-009)"
+      "diag.order_placeholder": "Commande à tester (ex. CKC-009)",
+      "cfg.token_row": "ligne utilisée : extension_id {extension}, site_id {site}"
     },
     en: {
       "title.popup": "Item substitution",
@@ -257,7 +258,8 @@
       "valid.parent_missing": "Warning: no parent_order_id found on the original order, the sub-order was created without a parent number (see the API call log in /config.html).",
       "cfg.token_encrypted": "encrypted (SETTINGS_ENCRYPTION_KEY)",
       "err.token_decrypt_failed": "Unable to decrypt onestock_token with SETTINGS_ENCRYPTION_KEY",
-      "diag.order_placeholder": "Order to test (e.g. CKC-009)"
+      "diag.order_placeholder": "Order to test (e.g. CKC-009)",
+      "cfg.token_row": "row used: extension_id {extension}, site_id {site}"
     },
     es: {
       "title.popup": "Sustitución de artículos",
