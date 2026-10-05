@@ -204,7 +204,8 @@
         "first_name": {},
         "mobile_number": {},
         "phone_number": {},
-        "title": {}
+        "title": {},
+        "last_name": {}
        }
       },
       "coordinates": {

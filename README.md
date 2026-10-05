@@ -48,13 +48,18 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
      sont rechargées dans toutes les langues pour compléter les champs vides (descriptif, image) avec `fr`.
 3. **Validation** : récapitulatif article d'origine → article de remplacement (même quantité).
    « Valider la substitution » appelle `POST /api/substitutions` (une fois par commande d'origine). Le serveur :
-   1. relit la commande d'origine complète (`GET /v3/orders/{id}`) ;
+   1. relit la commande d'origine complète (`GET /v3/orders/{id}`, avec la liste complète des `fields`,
+      `parent_order_id` compris). Deux formats de réponse sont acceptés (`lib/order-format.js`) :
+      `order_items` / `line_item_groups` (doc) ou `line_items` unitaires + `payment` (format observé) ; dans ce
+      second cas, les unités sont regroupées par article / statut / point de stock et leurs `index_ranges`
+      reconstruits, `payment` donne l'adresse de facturation, la devise et les frais de port, et le transporteur
+      est repris des lignes ou des colis. La pop-up utilise la même normalisation ;
    2. contrôle que chaque ligne appartient à la commande, que son statut est dans `substitution_states`
       et que `substituted_state` est configuré ;
    3. crée la **sous-commande** par `POST /v3/orders`, identifiant `{commande}-S1` (puis `-S2`… si elle existe déjà) :
-      - reprise des données de la commande d'origine acceptées par `POST /orders` (client, livraison,
-        adresse de facturation, devise, types, canal de vente, `information`, `ordering`, ruleset…),
-        sauf `id`, `date` et `payment_information` ;
+      - reprise des données de la commande d'origine acceptées par `POST /orders` (client, livraison et
+        transporteur, adresse de facturation, devise, types, canal de vente, `information`, `ordering`, ruleset…),
+        sauf `id`, `date`, `payment_information` et une `delivery_promise` incomplète ;
       - articles de substitution avec la quantité de la ligne d'origine et **tous les montants à 0** ;
       - **frais de port repris à 0** (sans taxes ni remises), total de la commande à 0 ;
       - **`parent_order_id` (« Parent number ») repris de la commande d'origine** et envoyé dans

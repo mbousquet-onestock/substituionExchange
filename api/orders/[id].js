@@ -6,6 +6,7 @@
 
 const { endpoint } = require("../../lib/http");
 const onestock = require("../../lib/onestock");
+const { normalize } = require("../../lib/order-format");
 
 module.exports = endpoint(async (params) => {
   const id = String(params.id || "").trim();
@@ -18,5 +19,7 @@ module.exports = endpoint(async (params) => {
     siteId: params.site_id,
     env: params.env,
   });
+  // Format "line_items" (certains sites) converti en order_items / line_item_groups pour la pop-up
+  if (result.status === 200) result.data = normalize(result.data);
   return { data: result };
 }, { methods: ["GET", "POST"] });
