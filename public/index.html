@@ -748,8 +748,38 @@
         }, function () {}).then(loadItems);
       });
 
+      // Une substitution a-t-elle abouti (sous-commande créée) ?
+      function substitutionDone() {
+        var c = wizard.confirm;
+        return !!(c && c.results && c.results.some(function (r) { return !r.error && r.sub_order_id; }));
+      }
+
+      // Recharge la page OneStock d'origine (parent_url). OneStock ne propose pas de message de rafraîchissement :
+      // la fenêtre principale est renvoyée vers sa propre URL, ce que le navigateur autorise après un clic.
+      function refreshParent() {
+        var url = params.get("parent_url");
+        if (!url) return false;
+        try {
+          var u = new URL(url);
+          if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+          window.top.location.href = u.href;
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+
       document.getElementById("close").addEventListener("click", function () {
-        window.parent.postMessage({ type: "extension_close" }, "*");
+        if (!substitutionDone()) {
+          window.parent.postMessage({ type: "extension_close" }, "*");
+          return;
+        }
+        // Fin de traitement : rechargement de la page d'origine, puis fermeture de la fenêtre
+        // (refresh : option non documentée, sans effet si OneStock l'ignore)
+        var reloading = refreshParent();
+        setTimeout(function () {
+          window.parent.postMessage({ type: "extension_close", refresh: true }, "*");
+        }, reloading ? 300 : 0);
       });
 
       window.parent.postMessage({ type: "extension_ready" }, "*");

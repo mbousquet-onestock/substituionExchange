@@ -77,6 +77,12 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
    Elle envoie aussi à la page parente un `postMessage` `{ type: "substitution_validated", substitutions, results }`.
    Ces deux écritures ne sont possibles que côté serveur : le proxy `/api/proxy` reste en lecture seule.
 
+   **Fermer** en fin de traitement (au moins une sous-commande créée) recharge la page OneStock d'origine :
+   OneStock ne propose pas de message de rafraîchissement, la fenêtre principale est donc renvoyée vers
+   `parent_url` (navigation autorisée par le navigateur car déclenchée par le clic), puis `extension_close`
+   est envoyé (avec `refresh: true`, option non documentée sans effet si ignorée). Sans substitution réalisée,
+   « Fermer » ferme simplement la fenêtre.
+
 ## Traductions
 
 Les textes **statiques** des pages sont dans `public/i18n.js` (fr, en, es, it, de). Les données récupérées
