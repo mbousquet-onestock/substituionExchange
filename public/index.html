@@ -754,10 +754,30 @@
         return !!(c && c.results && c.results.some(function (r) { return !r.error && r.sub_order_id; }));
       }
 
-      // Recharge la page OneStock d'origine (parent_url). OneStock ne propose pas de message de rafraîchissement :
-      // la fenêtre principale est renvoyée vers sa propre URL, ce que le navigateur autorise après un clic.
+      // Back-office OneStock par environnement, si parent_url est absent
+      var BACKOFFICE_HOSTS = { qualif: "https://admin-qualif.onestock-retail.com", prod: "https://admin.onestock-retail.com" };
+
+      // Page OneStock à recharger après substitution :
+      //   une commande  -> {back-office}/{site_id}/order/detail/{commande}
+      //                    (ex. https://admin-qualif.onestock-retail.com/o0057/order/detail/CKC-009)
+      //   plusieurs     -> page d'origine (parent_url)
+      function refreshUrl() {
+        var parent = null;
+        try { parent = params.get("parent_url") ? new URL(params.get("parent_url")) : null; } catch (e) {}
+        var origin = parent ? parent.origin : BACKOFFICE_HOSTS[params.get("env") || "qualif"];
+        var siteId = params.get("site_id");
+        var orders = (wizard.confirm.results || []).filter(function (r) { return !r.error && r.sub_order_id; })
+          .map(function (r) { return r.order_id; });
+        if (origin && siteId && orders.length === 1) {
+          return origin + "/" + encodeURIComponent(siteId) + "/order/detail/" + encodeURIComponent(orders[0]);
+        }
+        return parent ? parent.href : null;
+      }
+
+      // OneStock ne propose pas de message de rafraîchissement : la fenêtre principale est renvoyée
+      // vers la page à recharger, ce que le navigateur autorise après un clic.
       function refreshParent() {
-        var url = params.get("parent_url");
+        var url = refreshUrl();
         if (!url) return false;
         try {
           var u = new URL(url);
