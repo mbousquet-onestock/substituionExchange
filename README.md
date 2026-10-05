@@ -161,19 +161,17 @@ utilisée (`extension_id`, `site_id`).
 
 ### Token chiffré (`SETTINGS_ENCRYPTION_KEY`)
 
-Quand `SETTINGS_ENCRYPTION_KEY` est définie, `onestock_token` est déchiffré au moment de chaque appel OneStock
-(`lib/secret.js`) et chiffré lors de son enregistrement depuis `/config.html`.
-- Clé : 64 caractères hexadécimaux, base64 de 32 octets, ou texte libre (SHA-256).
-- Formats reconnus : `iv:tag:données` AES-256-GCM (hexadécimal ou base64), base64(`iv|tag|données`) ou
-  base64(`iv|données|tag`) AES-256-GCM, `iv:données` AES-256-CBC ; préfixe `enc:` / `v1:` ignoré.
-- Enregistrement : `iv:tag:données` en hexadécimal, AES-256-GCM (IV de 12 octets).
-- Un token qui ne correspond à aucun format chiffré est utilisé tel quel ; une valeur chiffrée qui ne se
-  déchiffre pas (mauvaise clé) renvoie l'erreur `token_decrypt_failed`.
-- `/config.html` et le diagnostic indiquent si le token est chiffré, son format et si le déchiffrement réussit ;
-  le diagnostic donne aussi l'empreinte du token stocké et déchiffré (longueur, 4 premiers / 4 derniers
-  caractères, SHA-256 tronqué) et le résultat d'un appel test à OneStock avec ce token (commande saisie,
-  sinon une fiche article) ;
-  le token n'est jamais renvoyé au navigateur ni écrit en clair dans le journal.
+`lib/secret.js` reprend exactement `settings-secrets.mjs` de l'application Extensions :
+- format `enc:v1:` + base64(iv 12 octets | tag 16 octets | texte chiffré), AES-256-GCM ;
+- clé : 64 caractères hex, 32 octets en base64, ou phrase secrète (SHA-256) ;
+- une valeur sans préfixe `enc:v1:` (ancienne valeur en clair) est utilisée telle quelle ;
+- un token saisi dans `/config.html` est enregistré au même format (relisible par l'application Extensions) ;
+- une valeur `enc:v1:` qui ne se déchiffre pas (mauvaise clé) renvoie l'erreur `token_decrypt_failed`.
+
+`/config.html` et le diagnostic indiquent si le token est chiffré et si le déchiffrement réussit ; le diagnostic
+donne aussi l'empreinte du token stocké et déchiffré (longueur, 4 premiers / 4 derniers caractères, SHA-256
+tronqué) et le résultat d'un appel test à OneStock (commande saisie, sinon une fiche article). Le token n'est
+jamais renvoyé au navigateur ni écrit en clair dans le journal.
 
 ### Diagnostic
 
