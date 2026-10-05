@@ -2,7 +2,8 @@
 
 // POST /api/admin/config  (en-tête X-Admin-Key)
 // { action: "meta" }                     -> { extension_id, environments, default_env, params }
-// { action: "diagnostic", env, site_id }  -> déploiement, base utilisée, structure et lignes de settings
+// { action: "diagnostic", env, site_id, order_id? } -> déploiement, base utilisée, structure et lignes de settings,
+//   empreinte du token (stocké / déchiffré) et appel test à OneStock avec ce token
 // { action: "sites", env }               -> { sites: [{ site_id, updated_at }] }
 // { action: "get", env, site_id }        -> configuration du site
 // { action: "set", env, site_id, params: { api_root?, default_lang?, substitution_states?, substituted_state?, token? } }
@@ -115,8 +116,21 @@ module.exports = adminEndpoint(async (req) => {
     try {
       const cfg = await onestock.siteConfig(ctx.site_id, ctx.environment);
       if (cfg.token_stored) {
-        try { const d = secret.decrypt(cfg.token_stored); token = { found: true, encrypted: !!d.format, format: d.format, decrypted: true }; }
-        catch (e) { token = { found: true, decrypted: false, error: e.message }; }
+        token = { found: true, stored: secret.fingerprint(cfg.token_stored) };
+        try {
+          const d = secret.decrypt(cfg.token_stored);
+          token = { ...token, encrypted: !!d.format, format: d.format, decrypted: true, value: secret.fingerprint(d.value) };
+        } catch (e) { token = { ...token, decrypted: false, error: e.message }; }
+        // Appel test à OneStock avec ce token (commande donnée, sinon une fiche article)
+        if (token.decrypted && ctx.site_id) {
+          const path = req.order_id ? `/v3/orders/${encodeURIComponent(String(req.order_id).trim())}` : "/v2/items";
+          const body = req.order_id ? { fields: ["id", "state"] } : { get_total: false, pagination: { start: 0, limit: 1 } };
+          try {
+            const r = await onestock.call({ method: "GET", path, body, siteId: ctx.site_id, env: ctx.environment });
+            token.test = { request: `GET ${cfg.api_root}${path}`, site_id: ctx.site_id, status: r.status,
+              ok: r.status >= 200 && r.status < 300, response: r.status >= 300 ? r.data : "OK" };
+          } catch (e) { token.test = { request: `GET ${cfg.api_root}${path}`, error: e.message }; }
+        }
       } else token = { found: false };
     } catch (e) { token = { error: e.message }; }
     try { await onestock.ensureSiteDefaults(ctx, true); } catch (e) { seed = { ok: false, error: e.message }; }

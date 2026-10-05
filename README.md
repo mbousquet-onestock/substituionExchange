@@ -157,6 +157,9 @@ Quand `SETTINGS_ENCRYPTION_KEY` est définie, `onestock_token` est déchiffré a
 - Un token qui ne correspond à aucun format chiffré est utilisé tel quel ; une valeur chiffrée qui ne se
   déchiffre pas (mauvaise clé) renvoie l'erreur `token_decrypt_failed`.
 - `/config.html` et le diagnostic indiquent si le token est chiffré, son format et si le déchiffrement réussit ;
+  le diagnostic donne aussi l'empreinte du token stocké et déchiffré (longueur, 4 premiers / 4 derniers
+  caractères, SHA-256 tronqué) et le résultat d'un appel test à OneStock avec ce token (commande saisie,
+  sinon une fiche article) ;
   le token n'est jamais renvoyé au navigateur ni écrit en clair dans le journal.
 
 ### Diagnostic

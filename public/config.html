@@ -152,7 +152,8 @@
   <section class="card" id="diag-card" hidden>
     <div class="logs-head">
       <h2 data-i18n="diag.title">Diagnostic</h2>
-      <button id="run-diag" class="small" type="button" data-i18n="diag.run">Lancer le diagnostic</button>
+<input id="diag-order" spellcheck="false" style="max-width: 180px; font-size: 13px; padding: 4px 8px" data-i18n-placeholder="diag.order_placeholder">
+            <button id="run-diag" class="small" type="button" data-i18n="diag.run">Lancer le diagnostic</button>
     </div>
     <p class="hint" data-i18n="diag.hint"></p>
     <pre id="diag" class="diag" hidden></pre>
@@ -359,7 +360,7 @@
       var box = $("diag");
       box.hidden = false;
       box.textContent = "…";
-      api("api/admin/config", { action: "diagnostic", env: current.env, site_id: current.site })
+      api("api/admin/config", { action: "diagnostic", env: current.env, site_id: current.site, order_id: $("diag-order").value.trim() || undefined })
         .then(function (d) { box.textContent = JSON.stringify(d, null, 2); if (lastCfg) load(); })
         .catch(function (e) { box.textContent = t("error.prefix", { error: e.message }); });
     });

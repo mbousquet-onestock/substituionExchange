@@ -125,11 +125,12 @@
       "btn.retry": "Réessayer",
       "diag.title": "Diagnostic",
       "diag.run": "Lancer le diagnostic",
-      "diag.hint": "Crée les paramètres manquants du site et affiche le déploiement, la base de données réellement utilisée, la structure de la table settings et ses lignes pour l'environnement et le site.",
+      "diag.hint": "Crée les paramètres manquants du site et affiche le déploiement, la base utilisée, les lignes de settings, l'empreinte du token (stocké / déchiffré) et le résultat d'un appel test à OneStock avec ce token (sur la commande indiquée, sinon une fiche article). Renseignez un site.",
       "valid.parent": "Numéro parent : {parent}.",
       "valid.parent_missing": "Attention : aucun parent_order_id trouvé sur la commande d'origine, la sous-commande a été créée sans numéro parent (voir le journal des appels dans /config.html).",
       "cfg.token_encrypted": "chiffré (SETTINGS_ENCRYPTION_KEY)",
-      "err.token_decrypt_failed": "Impossible de déchiffrer onestock_token avec SETTINGS_ENCRYPTION_KEY"
+      "err.token_decrypt_failed": "Impossible de déchiffrer onestock_token avec SETTINGS_ENCRYPTION_KEY",
+      "diag.order_placeholder": "Commande à tester (ex. CKC-009)"
     },
     en: {
       "title.popup": "Item substitution",
@@ -251,11 +252,12 @@
       "btn.retry": "Retry",
       "diag.title": "Diagnostics",
       "diag.run": "Run diagnostics",
-      "diag.hint": "Creates the site's missing settings and shows the deployment, the database actually used, the settings table structure and its rows for the environment and site.",
+      "diag.hint": "Creates the site's missing settings and shows the deployment, the database used, the settings rows, the token fingerprint (stored / decrypted) and the result of a test OneStock call with this token (on the given order, otherwise an item sheet). Set a site.",
       "valid.parent": "Parent number copied: {parent}.",
       "valid.parent_missing": "Warning: no parent_order_id found on the original order, the sub-order was created without a parent number (see the API call log in /config.html).",
       "cfg.token_encrypted": "encrypted (SETTINGS_ENCRYPTION_KEY)",
-      "err.token_decrypt_failed": "Unable to decrypt onestock_token with SETTINGS_ENCRYPTION_KEY"
+      "err.token_decrypt_failed": "Unable to decrypt onestock_token with SETTINGS_ENCRYPTION_KEY",
+      "diag.order_placeholder": "Order to test (e.g. CKC-009)"
     },
     es: {
       "title.popup": "Sustitución de artículos",

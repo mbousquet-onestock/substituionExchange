@@ -189,7 +189,9 @@
         return function (r) {
           if (r.status === 401) throw Object.assign(new Error(t("err.onestock_401")), { auth: true });
           if (r.status < 200 || r.status >= 300) {
-            var msg = r.data && (r.data.message || r.data.error || r.data.raw);
+            // Réponse OneStock complète (ex. { error: "auth_error", message: "…" })
+            var d = r.data || {};
+            var msg = d.error && d.message ? d.error + " – " + d.message : (d.message || d.error || d.raw || (r.data && JSON.stringify(r.data)));
             throw new Error(t("err.onestock", { path: path, status: r.status, message: msg ? (typeof msg === "string" ? msg : JSON.stringify(msg)) : "" }).trim());
           }
           return r.data;
