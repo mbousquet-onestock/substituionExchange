@@ -258,7 +258,8 @@
       paramBox("token").querySelector("[data-scope]").value = cfg.token.scope;
       showSource("token", cfg.token.set ? cfg.token : null);
       $("token-state").textContent = cfg.token.set
-        ? t("cfg.token_set", { preview: cfg.token.preview }) + (cfg.token.updated_at ? t("cfg.token_updated", { date: new Date(cfg.token.updated_at).toLocaleString(t.lang) }) : "")
+        ? t("cfg.token_set", { preview: cfg.token.preview }) + (cfg.token.updated_at ? t("cfg.token_updated", { date: new Date(cfg.token.updated_at).toLocaleString(t.lang) }) : "") +
+          (cfg.token.decrypt_error ? " — " + t("err.token_decrypt_failed") : cfg.token.encrypted ? " — " + t("cfg.token_encrypted") : "")
         : t("cfg.token_none");
     }
 

@@ -15,6 +15,7 @@
 const { adminEndpoint } = require("../../lib/http");
 const db = require("../../lib/db");
 const onestock = require("../../lib/onestock");
+const secret = require("../../lib/secret");
 
 function preview(token) {
   return token.length > 8 ? `${token.slice(0, 4)}…${token.slice(-4)}` : "****";
@@ -56,9 +57,19 @@ function normalize(name, raw) {
   }
   if (name === "token") {
     if (!/^[\w.+/=-]{1,1024}$/.test(v)) throw bad("invalid_token_format", "Format de token invalide");
-    return v;
+    return secret.encrypt(v); // chiffré avec SETTINGS_ENCRYPTION_KEY si elle est définie
   }
   return v;
+}
+
+// Aperçu du token déchiffré (jamais la valeur complète) et état du déchiffrement
+function tokenPreview(stored) {
+  try {
+    const d = secret.decrypt(stored);
+    return { preview: preview(d.value), encrypted: !!d.format, format: d.format || undefined };
+  } catch (e) {
+    return { preview: "****", decrypt_error: e.message };
+  }
 }
 
 async function describe(ctx) {
@@ -77,7 +88,7 @@ async function describe(ctx) {
     environment: ctx.environment,
     site_id: ctx.site_id,
     token: s.token
-      ? { set: true, preview: preview(s.token.value), updated_at: s.token.updated_at, scope: s.token.scope, level: s.token.level }
+      ? { set: true, ...tokenPreview(s.token.value), updated_at: s.token.updated_at, scope: s.token.scope, level: s.token.level }
       : { set: false, scope: db.PARAMS.token.scope },
     api_root: field("api_root"),
     default_lang: field("default_lang"),
@@ -100,6 +111,14 @@ module.exports = adminEndpoint(async (req) => {
   if (req.action === "diagnostic") {
     // Force la création des lignes par défaut et rapporte l'éventuelle erreur
     let seed = { ok: true };
+    let token = null;
+    try {
+      const cfg = await onestock.siteConfig(ctx.site_id, ctx.environment);
+      if (cfg.token_stored) {
+        try { const d = secret.decrypt(cfg.token_stored); token = { found: true, encrypted: !!d.format, format: d.format, decrypted: true }; }
+        catch (e) { token = { found: true, decrypted: false, error: e.message }; }
+      } else token = { found: false };
+    } catch (e) { token = { error: e.message }; }
     try { await onestock.ensureSiteDefaults(ctx, true); } catch (e) { seed = { ok: false, error: e.message }; }
     return { data: {
       deployment: {
@@ -110,6 +129,7 @@ module.exports = adminEndpoint(async (req) => {
       },
       context: ctx,
       seed,
+      token: { ...token, encryption_key_set: secret.enabled() },
       ...(await db.diagnostic(ctx)),
     } };
   }

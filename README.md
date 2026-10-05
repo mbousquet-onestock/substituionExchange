@@ -146,6 +146,19 @@ les autres sont grisées avec le motif « Substitution impossible pour le statut
 
 Le journal des appels API (500 derniers) enregistre l'extension, l'environnement et le site.
 
+### Token chiffré (`SETTINGS_ENCRYPTION_KEY`)
+
+Quand `SETTINGS_ENCRYPTION_KEY` est définie, `onestock_token` est déchiffré au moment de chaque appel OneStock
+(`lib/secret.js`) et chiffré lors de son enregistrement depuis `/config.html`.
+- Clé : 64 caractères hexadécimaux, base64 de 32 octets, ou texte libre (SHA-256).
+- Formats reconnus : `iv:tag:données` AES-256-GCM (hexadécimal ou base64), base64(`iv|tag|données`) ou
+  base64(`iv|données|tag`) AES-256-GCM, `iv:données` AES-256-CBC ; préfixe `enc:` / `v1:` ignoré.
+- Enregistrement : `iv:tag:données` en hexadécimal, AES-256-GCM (IV de 12 octets).
+- Un token qui ne correspond à aucun format chiffré est utilisé tel quel ; une valeur chiffrée qui ne se
+  déchiffre pas (mauvaise clé) renvoie l'erreur `token_decrypt_failed`.
+- `/config.html` et le diagnostic indiquent si le token est chiffré, son format et si le déchiffrement réussit ;
+  le token n'est jamais renvoyé au navigateur ni écrit en clair dans le journal.
+
 ### Diagnostic
 
 Le bouton **Lancer le diagnostic** de `/config.html` crée les paramètres manquants du site, puis affiche :
@@ -172,6 +185,7 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 | `ONESTOCK_ENV` / `ONESTOCK_ENVIRONMENTS` | environnement par défaut (défaut `qualif`) / environnements acceptés (défaut `qualif,prod`) |
 | `DEFAULT_SUBSTITUTION_STATES` | statuts éligibles si non configurés (défaut `*`) |
 | `DEFAULT_SUBSTITUTED_STATE` | statut des lignes substituées si non configuré (défaut `substituted`) |
+| `SETTINGS_ENCRYPTION_KEY` | clé de chiffrement de `onestock_token` dans `settings` (voir « Token chiffré ») |
 | `ADMIN_KEY` | clé d'accès à `/config.html` (**obligatoire sur Vercel**, sinon la page est refusée) |
 | `DEFAULT_LANG` | langue par défaut si non configurée (défaut `fr`) |
 | `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |
