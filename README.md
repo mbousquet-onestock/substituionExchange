@@ -127,6 +127,14 @@ les autres sont grisées avec le motif « Substitution impossible pour le statut
 
 Le journal des appels API (500 derniers) enregistre l'extension, l'environnement et le site.
 
+### Diagnostic
+
+Le bouton **Lancer le diagnostic** de `/config.html` crée les paramètres manquants du site, puis affiche :
+le déploiement Vercel (commit, branche, environnement), la base réellement utilisée (hôte, nom),
+la structure et la clé primaire de `settings`, les lignes de l'environnement / du site (token masqué)
+et le nombre de lignes par paramètre. Utile si les lignes n'apparaissent pas dans la base consultée
+(ex. base de preview Neon différente de la base de production).
+
 ## Base de données (Vercel)
 
 Vercel → projet → **Storage** → créer une base **Postgres (Neon)** et la connecter au projet :

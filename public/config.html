@@ -53,6 +53,7 @@
     .log pre { margin: 0 10px 10px; background: #0f172a; color: #e2e8f0; padding: 8px 10px; border-radius: 4px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 320px; overflow: auto; }
     .log .label { margin: 4px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
     .empty { color: var(--muted); padding: 12px; }
+    .diag { margin: 12px 0 0; background: #0f172a; color: #e2e8f0; padding: 10px 12px; border-radius: 6px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 520px; overflow: auto; }
     select { font: inherit; padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
     .param { border-top: 1px solid var(--panel); padding-top: 12px; margin-top: 12px; }
     .param:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
@@ -148,6 +149,15 @@
     </form>
   </section>
 
+  <section class="card" id="diag-card" hidden>
+    <div class="logs-head">
+      <h2 data-i18n="diag.title">Diagnostic</h2>
+      <button id="run-diag" class="small" type="button" data-i18n="diag.run">Lancer le diagnostic</button>
+    </div>
+    <p class="hint" data-i18n="diag.hint"></p>
+    <pre id="diag" class="diag" hidden></pre>
+  </section>
+
   <section class="card" id="logs-card" hidden>
     <div class="logs-head">
       <h2 id="logs-title" data-i18n="logs.title">Appels API OneStock</h2>
@@ -232,6 +242,7 @@
       lastCfg = cfg;
       $("settings-card").hidden = false;
       $("logs-card").hidden = false;
+      $("diag-card").hidden = false;
       var where = (cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.common")) + " — " + cfg.environment;
       $("settings-title").textContent = where;
       $("logs-title").textContent = t("logs.title") + " — " + (cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.all_sites")) + " — " + cfg.environment;
@@ -342,6 +353,14 @@
       var show = input.type === "password";
       input.type = show ? "text" : "password";
       this.textContent = show ? t("cfg.hide") : t("cfg.show");
+    });
+    $("run-diag").addEventListener("click", function () {
+      var box = $("diag");
+      box.hidden = false;
+      box.textContent = "…";
+      api("api/admin/config", { action: "diagnostic", env: current.env, site_id: current.site })
+        .then(function (d) { box.textContent = JSON.stringify(d, null, 2); if (lastCfg) load(); })
+        .catch(function (e) { box.textContent = t("error.prefix", { error: e.message }); });
     });
     $("refresh-logs").addEventListener("click", loadLogs);
     $("clear-logs").addEventListener("click", function () {

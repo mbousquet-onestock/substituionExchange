@@ -2,6 +2,7 @@
 
 // POST /api/admin/config  (en-tête X-Admin-Key)
 // { action: "meta" }                     -> { extension_id, environments, default_env, params }
+// { action: "diagnostic", env, site_id }  -> déploiement, base utilisée, structure et lignes de settings
 // { action: "sites", env }               -> { sites: [{ site_id, updated_at }] }
 // { action: "get", env, site_id }        -> configuration du site
 // { action: "set", env, site_id, params: { api_root?, default_lang?, substitution_states?, substituted_state?, token? } }
@@ -96,6 +97,22 @@ module.exports = adminEndpoint(async (req) => {
     } };
   }
   const ctx = onestock.context(checkSiteId(req.site_id), req.env);
+  if (req.action === "diagnostic") {
+    // Force la création des lignes par défaut et rapporte l'éventuelle erreur
+    let seed = { ok: true };
+    try { await onestock.ensureSiteDefaults(ctx, true); } catch (e) { seed = { ok: false, error: e.message }; }
+    return { data: {
+      deployment: {
+        commit: process.env.VERCEL_GIT_COMMIT_SHA || null,
+        branch: process.env.VERCEL_GIT_COMMIT_REF || null,
+        vercel_env: process.env.VERCEL_ENV || null,
+        url: process.env.VERCEL_URL || null,
+      },
+      context: ctx,
+      seed,
+      ...(await db.diagnostic(ctx)),
+    } };
+  }
   if (req.action === "sites") return { data: { sites: await db.listSites(ctx) } };
 
   if (req.action === "set") {

@@ -122,7 +122,10 @@
       "valid.line_failed": "Ligne {line} ({from} → {to}) : {error}",
       "valid.failed": "La substitution a échoué : {error}",
       "valid.sub_order": "Sous-commande",
-      "btn.retry": "Réessayer"
+      "btn.retry": "Réessayer",
+      "diag.title": "Diagnostic",
+      "diag.run": "Lancer le diagnostic",
+      "diag.hint": "Crée les paramètres manquants du site et affiche le déploiement, la base de données réellement utilisée, la structure de la table settings et ses lignes pour l'environnement et le site."
     },
     en: {
       "title.popup": "Item substitution",
@@ -241,7 +244,10 @@
       "valid.line_failed": "Line {line} ({from} → {to}): {error}",
       "valid.failed": "The substitution failed: {error}",
       "valid.sub_order": "Sub-order",
-      "btn.retry": "Retry"
+      "btn.retry": "Retry",
+      "diag.title": "Diagnostics",
+      "diag.run": "Run diagnostics",
+      "diag.hint": "Creates the site's missing settings and shows the deployment, the database actually used, the settings table structure and its rows for the environment and site."
     },
     es: {
       "title.popup": "Sustitución de artículos",
