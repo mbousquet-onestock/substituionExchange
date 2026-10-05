@@ -125,7 +125,8 @@
       "btn.retry": "Réessayer",
       "diag.title": "Diagnostic",
       "diag.run": "Lancer le diagnostic",
-      "diag.hint": "Crée les paramètres manquants du site et affiche le déploiement, la base de données réellement utilisée, la structure de la table settings et ses lignes pour l'environnement et le site."
+      "diag.hint": "Crée les paramètres manquants du site et affiche le déploiement, la base de données réellement utilisée, la structure de la table settings et ses lignes pour l'environnement et le site.",
+      "valid.parent": "Numéro parent : {parent}.",
     },
     en: {
       "title.popup": "Item substitution",
@@ -247,7 +248,8 @@
       "btn.retry": "Retry",
       "diag.title": "Diagnostics",
       "diag.run": "Run diagnostics",
-      "diag.hint": "Creates the site's missing settings and shows the deployment, the database actually used, the settings table structure and its rows for the environment and site."
+      "diag.hint": "Creates the site's missing settings and shows the deployment, the database actually used, the settings table structure and its rows for the environment and site.",
+      "valid.parent": "Parent number copied: {parent}.",
     },
     es: {
       "title.popup": "Sustitución de artículos",
@@ -286,7 +288,8 @@
       "valid.created": "Subpedido {id} creado. {n} línea(s) con el estado «{state}».",
       "valid.partial": "Subpedido {id} creado, pero no se pudo cambiar el estado de algunas líneas:",
       "valid.failed": "La sustitución ha fallado: {error}",
-      "btn.retry": "Reintentar"
+      "btn.retry": "Reintentar",
+      "valid.parent": "Número padre copiado: {parent}."
     },
     it: {
       "title.popup": "Sostituzione articoli",
@@ -325,7 +328,8 @@
       "valid.created": "Sotto-ordine {id} creato. {n} riga/e con lo stato «{state}».",
       "valid.partial": "Sotto-ordine {id} creato, ma non è stato possibile modificare lo stato di alcune righe:",
       "valid.failed": "La sostituzione non è riuscita: {error}",
-      "btn.retry": "Riprova"
+      "btn.retry": "Riprova",
+      "valid.parent": "Numero padre ripreso: {parent}."
     },
     de: {
       "title.popup": "Artikelersatz",
@@ -364,7 +368,8 @@
       "valid.created": "Unterbestellung {id} erstellt. {n} Position(en) auf Status „{state}“ gesetzt.",
       "valid.partial": "Unterbestellung {id} erstellt, aber der Status einiger Positionen konnte nicht geändert werden:",
       "valid.failed": "Der Ersatz ist fehlgeschlagen: {error}",
-      "btn.retry": "Erneut versuchen"
+      "btn.retry": "Erneut versuchen",
+      "valid.parent": "Übergeordnete Nummer übernommen: {parent}."
     }
   };
 

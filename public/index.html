@@ -638,7 +638,8 @@
           }
           var failed = r.lines.filter(function (l) { return !l.ok; });
           if (!failed.length) {
-            box.appendChild(infoBanner(t("valid.created", { id: r.sub_order_id, n: r.lines.length, state: r.substituted_state }), true));
+            box.appendChild(infoBanner(t("valid.created", { id: r.sub_order_id, n: r.lines.length, state: r.substituted_state }) +
+              (r.parent_order_id ? " " + t("valid.parent", { parent: r.parent_order_id }) : ""), true));
             return;
           }
           var w = el("div", "info-banner warn");
