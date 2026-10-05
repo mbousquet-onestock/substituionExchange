@@ -57,8 +57,12 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
         sauf `id`, `date` et `payment_information` ;
       - articles de substitution avec la quantité de la ligne d'origine et **tous les montants à 0** ;
       - **frais de port repris à 0** (sans taxes ni remises), total de la commande à 0 ;
-      - **`parent_order_id` (« Parent number ») repris de la commande d'origine**. Ce champ n'étant pas
-        proposé dans les `fields` de `GET /orders`, il est lu sur la commande complète (GET sans filtre de champs) ;
+      - **`parent_order_id` (« Parent number ») repris de la commande d'origine** et envoyé dans
+        `order.parent_order_id`. Ce champ n'étant pas documenté dans les `fields` de `GET /orders`, il est cherché
+        (à tout niveau de la réponse) par lectures successives, arrêtées dès qu'il est trouvé :
+        `GET /v3/orders/{id}` avec `fields: ["parent_order_id"]`, puis sans filtre, puis les mêmes en `/v4`.
+        La réponse de `/api/substitutions` indique la lecture qui l'a fourni (`parent_lookup`) ; s'il est introuvable,
+        la sous-commande est créée sans numéro parent et la pop-up l'affiche en avertissement ;
       - `information.original_order_id` et `information.substitution` (commande, lignes, articles d'origine)
         pour le lien avec la commande d'origine ;
    4. passe chaque ligne substituée de son statut actuel au statut `substituted_state`

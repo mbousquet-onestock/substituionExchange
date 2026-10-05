@@ -127,6 +127,7 @@
       "diag.run": "Lancer le diagnostic",
       "diag.hint": "Crée les paramètres manquants du site et affiche le déploiement, la base de données réellement utilisée, la structure de la table settings et ses lignes pour l'environnement et le site.",
       "valid.parent": "Numéro parent : {parent}.",
+      "valid.parent_missing": "Attention : aucun parent_order_id trouvé sur la commande d'origine, la sous-commande a été créée sans numéro parent (voir le journal des appels dans /config.html)."
     },
     en: {
       "title.popup": "Item substitution",
@@ -250,6 +251,7 @@
       "diag.run": "Run diagnostics",
       "diag.hint": "Creates the site's missing settings and shows the deployment, the database actually used, the settings table structure and its rows for the environment and site.",
       "valid.parent": "Parent number copied: {parent}.",
+      "valid.parent_missing": "Warning: no parent_order_id found on the original order, the sub-order was created without a parent number (see the API call log in /config.html)."
     },
     es: {
       "title.popup": "Sustitución de artículos",
