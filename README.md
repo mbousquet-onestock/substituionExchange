@@ -12,7 +12,8 @@ public/i18n.js      traductions (fr, en, es, it, de)
 public/config.html  page d'administration : configuration par site + journal des appels API
 public/context.html affichage brut du contexte reçu de OneStock (debug)
 api/orders/[id].js  GET  /api/orders/{id} : proxy dédié vers GET /v3/orders/{id}
-api/proxy.js        POST /api/proxy  : proxy générique (fiches articles /v2/items)
+api/proxy.js        POST /api/proxy  : proxy générique en lecture (fiches articles /v2/items)
+api/substitutions.js POST /api/substitutions : confirmation (sous-commande + statut des lignes)
 api/settings.js     GET  /api/settings : langue par défaut du site (pour la pop-up)
 api/admin/config.js POST /api/admin/config : configuration par site (clé admin)
 api/admin/logs.js   POST /api/admin/logs   : journal des appels API OneStock (clé admin)
@@ -46,9 +47,24 @@ scripts/dev-server.js  serveur local qui reproduit Vercel
      `GET /v2/items` par nom (`pattern` sur `name`) et par référence exacte (`item_ids`) ; les fiches trouvées
      sont rechargées dans toutes les langues pour compléter les champs vides (descriptif, image) avec `fr`.
 3. **Validation** : récapitulatif article d'origine → article de remplacement (même quantité).
-   « Valider la substitution » envoie à la page parente un `postMessage`
-   `{ type: "substitution_validated", substitutions: [{ order_id, line_item_group_id, item_id, quantity, substitute_item_id }] }`.
-   Aucune modification n'est encore envoyée à OneStock.
+   « Valider la substitution » appelle `POST /api/substitutions` (une fois par commande d'origine). Le serveur :
+   1. relit la commande d'origine complète (`GET /v3/orders/{id}`) ;
+   2. contrôle que chaque ligne appartient à la commande, que son statut est dans `substitution_states`
+      et que `substituted_state` est configuré ;
+   3. crée la **sous-commande** par `POST /v3/orders`, identifiant `{commande}-S1` (puis `-S2`… si elle existe déjà) :
+      - reprise des données de la commande d'origine acceptées par `POST /orders` (client, livraison,
+        adresse de facturation, devise, types, canal de vente, `information`, `ordering`, ruleset…),
+        sauf `id`, `date` et `payment_information` ;
+      - articles de substitution avec la quantité de la ligne d'origine et **tous les montants à 0** ;
+      - **frais de port repris à 0** (sans taxes ni remises), total de la commande à 0 ;
+      - `information.parent_order_id` et `information.substitution` (commande, lignes, articles d'origine)
+        pour le lien avec la commande d'origine ;
+   4. passe chaque ligne substituée de son statut actuel au statut `substituted_state`
+      (`PATCH /v3/line_item_groups` avec ses `index_ranges` et son `endpoint_id`).
+
+   La pop-up affiche la sous-commande créée et, le cas échéant, les lignes dont le statut n'a pas pu changer.
+   Elle envoie aussi à la page parente un `postMessage` `{ type: "substitution_validated", substitutions, results }`.
+   Ces deux écritures ne sont possibles que côté serveur : le proxy `/api/proxy` reste en lecture seule.
 
 ## Traductions
 
@@ -84,7 +100,8 @@ extension + site → global + site → extension + commun → global + commun �
 |---|---|---|---|
 | Route de l'API | `onestock_api_root` | global | qualif : `https://api-qualif.onestock-retail.com`, prod : `https://api.onestock-retail.com` |
 | Langue par défaut (repli des fiches articles) | `default_lang` | global | `fr` (`DEFAULT_LANG`) |
-| Statuts des lignes permettant la substitution | `substitution_states` | extension | `*` = tous (`DEFAULT_SUBSTITUTION_STATES`) |
+| Statuts des lignes éligibles à la substitution | `substitution_states` | extension | `*` = tous (`DEFAULT_SUBSTITUTION_STATES`) |
+| Statut des lignes substituées | `substituted_state` | extension | — (obligatoire pour confirmer ; `DEFAULT_SUBSTITUTED_STATE`) |
 | Token API OneStock | `onestock_token` | global | — |
 
 Dans `/config.html`, chaque paramètre a un sélecteur de portée : **Global (toutes les extensions)** ou
@@ -125,7 +142,8 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 | `ONESTOCK_GET_TRANSPORT` | `xget` (défaut) ou `override` (`POST` + `X-HTTP-Method-Override: GET`) |
 | `EXTENSION_ID` | id de l'extension dans `settings` (défaut `substitution`) |
 | `ONESTOCK_ENV` / `ONESTOCK_ENVIRONMENTS` | environnement par défaut (défaut `qualif`) / environnements acceptés (défaut `qualif,prod`) |
-| `DEFAULT_SUBSTITUTION_STATES` | statuts permettant la substitution si non configurés (défaut `*`) |
+| `DEFAULT_SUBSTITUTION_STATES` | statuts éligibles si non configurés (défaut `*`) |
+| `DEFAULT_SUBSTITUTED_STATE` | statut des lignes substituées si non configuré (défaut : aucun) |
 | `ADMIN_KEY` | clé d'accès à `/config.html` (**obligatoire sur Vercel**, sinon la page est refusée) |
 | `DEFAULT_LANG` | langue par défaut si non configurée (défaut `fr`) |
 | `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |

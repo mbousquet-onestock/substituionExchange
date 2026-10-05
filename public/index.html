@@ -56,6 +56,9 @@
     .info-banner { display: flex; gap: 12px; align-items: center; background: var(--panel); border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; color: #374151; }
     .info-banner svg { flex: none; }
     .info-banner.success { background: #e7f6ec; color: #1f6b3d; }
+    .info-banner.warn { background: #fdf1e3; color: #8a4b08; }
+    .info-banner.error { background: var(--error-bg); color: var(--error); }
+    .info-banner ul { margin: 6px 0 0; padding-left: 18px; }
     .list { display: flex; flex-direction: column; gap: 8px; }
     .card { border: 1px solid var(--border); border-radius: 6px; background: #fff; }
     .card.selectable { cursor: pointer; }
@@ -343,7 +346,7 @@
           return;
         }
         Promise.all(orderIds.map(loadOrder)).then(function (orders) {
-          wizard = { step: 0, orders: orders, selected: {}, replacements: {}, candidates: {}, results: {}, validated: false };
+          wizard = { step: 0, orders: orders, selected: {}, replacements: {}, candidates: {}, results: {}, confirm: null };
           render();
 
         });
@@ -441,6 +444,7 @@
 
       function goTo(step) {
         wizard.step = step;
+        if (step < 2) wizard.confirm = null;
         if (step === 1) loadCandidates();
         render();
         window.scrollTo(0, 0);
@@ -457,8 +461,11 @@
         var back = document.getElementById("back");
         var next = document.getElementById("next");
         var hasItems = allItems().length > 0;
-        back.hidden = wizard.step === 0 || wizard.validated;
-        next.hidden = !hasItems || wizard.validated;
+        var c = wizard.confirm;
+        // Après confirmation : plus de retour ; « Réessayer » uniquement si toutes les confirmations ont échoué avant création
+        var retry = c && !c.loading && c.results && c.results.every(function (r) { return r.error; });
+        back.hidden = wizard.step === 0 || (c && !retry);
+        next.hidden = !hasItems || (c && !retry);
         if (wizard.step === 0) {
           next.textContent = t("btn.next");
           next.disabled = selectedItems().length === 0;
@@ -466,8 +473,8 @@
           next.textContent = t("btn.next");
           next.disabled = selectedItems().some(function (it) { return !wizard.replacements[it.key]; });
         } else {
-          next.textContent = t("btn.validate");
-          next.disabled = false;
+          next.textContent = retry ? t("btn.retry") : t("btn.validate");
+          next.disabled = !!(c && c.loading);
         }
       }
 
@@ -616,10 +623,38 @@
       }
 
       // Étape 3 : récapitulatif
+      // Bandeau de résultat de la confirmation (sous-commande, lignes en erreur)
+      function resultBanner(box) {
+        var c = wizard.confirm;
+        if (!c) { box.appendChild(infoBanner(t("valid.check"))); return; }
+        if (c.loading) { box.appendChild(infoBanner(t("valid.processing"))); return; }
+        (c.results || []).forEach(function (r) {
+          if (r.error) {
+            var e = el("div", "info-banner error");
+            e.appendChild(icon("icon-info"));
+            e.appendChild(el("div", null, t("valid.failed", { error: r.error })));
+            box.appendChild(e);
+            return;
+          }
+          var failed = r.lines.filter(function (l) { return !l.ok; });
+          if (!failed.length) {
+            box.appendChild(infoBanner(t("valid.created", { id: r.sub_order_id, n: r.lines.length, state: r.substituted_state }), true));
+            return;
+          }
+          var w = el("div", "info-banner warn");
+          w.appendChild(icon("icon-info"));
+          var txt = el("div");
+          txt.appendChild(el("div", null, t("valid.partial", { id: r.sub_order_id })));
+          var ul = el("ul");
+          failed.forEach(function (l) { ul.appendChild(el("li", null, t("valid.line_failed", { line: l.line_item_group_id, from: l.from, to: l.to, error: l.error }))); });
+          txt.appendChild(ul);
+          w.appendChild(txt);
+          box.appendChild(w);
+        });
+      }
+
       function renderStepValidation(box) {
-        box.appendChild(infoBanner(wizard.validated
-          ? t("valid.done", { n: selectedItems().length })
-          : t("valid.check"), wizard.validated));
+        resultBanner(box);
         selectedItems().forEach(function (item) {
           var row = el("div", "recap");
           var from = el("div", "card");
@@ -661,11 +696,27 @@
       }
 
       document.getElementById("back").addEventListener("click", function () { goTo(Math.max(0, wizard.step - 1)); });
+      // Confirmation : une sous-commande par commande d'origine (POST /api/substitutions)
+      function confirmSubstitution() {
+        var byOrder = {};
+        substitutionRequest().forEach(function (l) {
+          (byOrder[l.order_id] = byOrder[l.order_id] || []).push({ line_item_group_id: l.line_item_group_id, substitute_item_id: l.substitute_item_id });
+        });
+        wizard.confirm = { loading: true };
+        render();
+        Promise.all(Object.keys(byOrder).map(function (orderId) {
+          return post("api/substitutions", { order_id: orderId, lines: byOrder[orderId] })
+            .catch(function (e) { return { order_id: orderId, error: e.message }; });
+        })).then(function (results) {
+          wizard.confirm = { results: results };
+          render();
+          window.parent.postMessage({ type: "substitution_validated", substitutions: substitutionRequest(), results: results }, "*");
+        });
+      }
+
       document.getElementById("next").addEventListener("click", function () {
         if (wizard.step < 2) return goTo(wizard.step + 1);
-        wizard.validated = true;
-        window.parent.postMessage({ type: "substitution_validated", substitutions: substitutionRequest() }, "*");
-        render();
+        confirmSubstitution();
       });
 
       // ---------- Communication avec OneStock (iframe) ----------

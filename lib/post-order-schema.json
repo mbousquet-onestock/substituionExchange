@@ -1,0 +1,305 @@
+{
+ "p": {
+  "candidate_tags": {
+   "o": true
+  },
+  "customer": {
+   "p": {
+    "email": {},
+    "external_id": {},
+    "first_name": {},
+    "id": {},
+    "information": {
+     "o": true
+    },
+    "last_name": {},
+    "phone_number": {},
+    "title": {}
+   }
+  },
+  "date": {},
+  "delivery": {
+   "p": {
+    "carrier": {
+     "p": {
+      "name": {},
+      "option": {}
+     }
+    },
+    "destination": {
+     "p": {
+      "address": {
+       "p": {
+        "city": {},
+        "contact": {
+         "p": {
+          "company_name": {},
+          "email": {},
+          "first_name": {},
+          "last_name": {},
+          "mobile_number": {},
+          "phone_number": {},
+          "title": {}
+         }
+        },
+        "coordinates": {
+         "p": {
+          "lat": {},
+          "lon": {}
+         }
+        },
+        "information": {
+         "o": true
+        },
+        "lines": {
+         "i": {}
+        },
+        "regions": {
+         "o": true
+        },
+        "zip_code": {}
+       }
+      },
+      "endpoint_id": {},
+      "relay_point_id": {}
+     }
+    },
+    "origin": {
+     "p": {
+      "endpoint_id": {}
+     }
+    },
+    "type": {}
+   }
+  },
+  "delivery_promise": {
+   "p": {
+    "original_delivery_option": {
+     "p": {
+      "carbon_footprint": {},
+      "cost": {},
+      "cutoff": {},
+      "delivery_method": {},
+      "delivery_routes": {
+       "i": {
+        "p": {
+         "carrier": {
+          "p": {
+           "name": {},
+           "option": {}
+          }
+         },
+         "information": {
+          "o": true
+         }
+        }
+       }
+      },
+      "destination": {
+       "p": {
+        "delivery_zone": {},
+        "endpoint_id": {},
+        "location": {
+         "p": {
+          "country": {},
+          "state": {},
+          "timezone": {},
+          "zip_code": {}
+         }
+        }
+       }
+      },
+      "eta_end": {},
+      "eta_start": {},
+      "metric_values": {
+       "o": true
+      },
+      "reason": {},
+      "shipment_number": {},
+      "status": {}
+     }
+    },
+    "sent_delivery_option": {
+     "p": {
+      "eta_end": {},
+      "eta_start": {}
+     }
+    }
+   }
+  },
+  "id": {},
+  "information": {
+   "o": true
+  },
+  "on_available_stock": {
+   "p": {
+    "auto_orchestrable": {}
+   }
+  },
+  "order_items": {
+   "i": {
+    "p": {
+     "id": {},
+     "information": {
+      "o": true
+     },
+     "item_id": {},
+     "pricing_details": {
+      "p": {
+       "discounts": {
+        "i": {
+         "p": {
+          "amount": {},
+          "id": {},
+          "percentage": {},
+          "title": {},
+          "type": {}
+         }
+        }
+       },
+       "original_price": {},
+       "original_unit_price": {},
+       "price": {},
+       "taxes": {
+        "i": {
+         "p": {
+          "amount": {},
+          "category": {},
+          "date": {},
+          "id": {},
+          "included_in_price": {},
+          "percentage": {},
+          "taxable_amount": {},
+          "title": {}
+         }
+        }
+       },
+       "unit_price": {}
+      }
+     },
+     "quantity": {}
+    }
+   }
+  },
+  "ordering": {
+   "p": {
+    "endpoint_id": {},
+    "user_id": {}
+   }
+  },
+  "original_ruleset_chaining_id": {},
+  "original_ruleset_id": {},
+  "payment_information": {
+   "o": true
+  },
+  "pricing_details": {
+   "p": {
+    "address": {
+     "p": {
+      "city": {},
+      "contact": {
+       "p": {
+        "company_name": {},
+        "email": {},
+        "first_name": {},
+        "mobile_number": {},
+        "phone_number": {},
+        "title": {}
+       }
+      },
+      "coordinates": {
+       "p": {
+        "lat": {},
+        "lon": {}
+       }
+      },
+      "information": {
+       "o": true
+      },
+      "lines": {
+       "i": {}
+      },
+      "regions": {
+       "o": true
+      },
+      "zip_code": {}
+     }
+    },
+    "currency": {},
+    "discounts": {
+     "i": {
+      "p": {
+       "amount": {},
+       "id": {},
+       "percentage": {},
+       "title": {},
+       "type": {}
+      }
+     }
+    },
+    "original_price": {},
+    "price": {},
+    "taxes": {
+     "i": {
+      "p": {
+       "amount": {},
+       "category": {},
+       "date": {},
+       "id": {},
+       "included_in_price": {},
+       "percentage": {},
+       "taxable_amount": {},
+       "title": {}
+      }
+     }
+    }
+   }
+  },
+  "reservation_rank": {},
+  "sales_channel": {},
+  "shipping_fees": {
+   "i": {
+    "p": {
+     "currency": {},
+     "discounts": {
+      "i": {
+       "p": {
+        "amount": {},
+        "id": {},
+        "percentage": {},
+        "title": {},
+        "type": {}
+       }
+      }
+     },
+     "original_price": {},
+     "price": {},
+     "taxes": {
+      "i": {
+       "p": {
+        "amount": {},
+        "category": {},
+        "date": {},
+        "id": {},
+        "included_in_price": {},
+        "percentage": {},
+        "taxable_amount": {},
+        "title": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "sign_on_collect": {},
+  "taxes_information": {
+   "p": {
+    "exemption_code": {},
+    "provider_transaction_id": {}
+   }
+  },
+  "types": {
+   "i": {}
+  }
+ }
+}

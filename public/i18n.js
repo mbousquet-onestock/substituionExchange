@@ -93,7 +93,7 @@
       "logs.confirm_all": "Vider tout le journal ?",
       "cfg.extension": "Extension : {id}",
       "cfg.all_sites": "tous les sites",
-      "cfg.states": "Statuts des lignes permettant la substitution",
+      "cfg.states": "Statuts des lignes de commande éligibles à la substitution",
       "cfg.states_hint": "Liste séparée par des virgules (ex. fulfilled, claimed), * = tous les statuts. Vide = valeur commune ou par défaut ({default}).",
       "cfg.scope.global": "Global (toutes les extensions)",
       "cfg.scope.extension": "Spécifique à {id}",
@@ -104,7 +104,25 @@
       "cfg.origin": "{scope} · {level}",
       "err.env_invalid": "Environnement inconnu : {env}",
       "err.invalid_states": "Statuts invalides : liste séparée par des virgules (ex. fulfilled, claimed) ou * pour tous",
-      "items.not_eligible": "Substitution impossible pour le statut « {state} »"
+      "items.not_eligible": "Substitution impossible pour le statut « {state} »",
+      "cfg.substituted_state": "Statut des lignes de commande substituées",
+      "cfg.substituted_state_hint": "Statut appliqué (PATCH /line_item_groups) aux lignes substituées lors de la confirmation, ex. substituted. Doit exister dans le diagramme d'états OneStock. Obligatoire pour confirmer une substitution.",
+      "err.invalid_state": "Statut invalide (ex. substituted)",
+      "err.substituted_state_missing": "Statut des lignes substituées non configuré pour le site {site_id} (page /config.html)",
+      "err.no_lines": "Aucune ligne à substituer",
+      "err.line_not_found": "Ligne {line} introuvable dans la commande {order_id}",
+      "err.line_not_eligible": "Substitution impossible pour le statut « {state} »",
+      "err.substitute_missing": "Article de substitution manquant pour la ligne {line}",
+      "err.line_no_index": "Ligne {line} sans index_ranges : changement de statut impossible",
+      "err.sub_order_limit": "Trop de sous-commandes pour la commande {order_id}",
+      "err.onestock_error": "OneStock {path} : {status}",
+      "valid.processing": "Création de la sous-commande et mise à jour des lignes…",
+      "valid.created": "Sous-commande {id} créée. {n} ligne(s) passée(s) au statut « {state} ».",
+      "valid.partial": "Sous-commande {id} créée, mais le statut de certaines lignes n'a pas pu être modifié :",
+      "valid.line_failed": "Ligne {line} ({from} → {to}) : {error}",
+      "valid.failed": "La substitution a échoué : {error}",
+      "valid.sub_order": "Sous-commande",
+      "btn.retry": "Réessayer"
     },
     en: {
       "title.popup": "Item substitution",
@@ -194,7 +212,7 @@
       "logs.confirm_all": "Clear the whole log?",
       "cfg.extension": "Extension: {id}",
       "cfg.all_sites": "all sites",
-      "cfg.states": "Order line statuses allowing substitution",
+      "cfg.states": "Order line statuses eligible for substitution",
       "cfg.states_hint": "Comma-separated list (e.g. fulfilled, claimed), * = all statuses. Empty = common or default value ({default}).",
       "cfg.scope.global": "Global (all extensions)",
       "cfg.scope.extension": "Specific to {id}",
@@ -205,7 +223,25 @@
       "cfg.origin": "{scope} · {level}",
       "err.env_invalid": "Unknown environment: {env}",
       "err.invalid_states": "Invalid statuses: comma-separated list (e.g. fulfilled, claimed) or * for all",
-      "items.not_eligible": "Substitution not available for status “{state}”"
+      "items.not_eligible": "Substitution not available for status “{state}”",
+      "cfg.substituted_state": "Status of substituted order lines",
+      "cfg.substituted_state_hint": "Status applied (PATCH /line_item_groups) to substituted lines on confirmation, e.g. substituted. Must exist in the OneStock state diagram. Required to confirm a substitution.",
+      "err.invalid_state": "Invalid status (e.g. substituted)",
+      "err.substituted_state_missing": "Substituted line status not configured for site {site_id} (/config.html page)",
+      "err.no_lines": "No lines to substitute",
+      "err.line_not_found": "Line {line} not found in order {order_id}",
+      "err.line_not_eligible": "Substitution not available for status “{state}”",
+      "err.substitute_missing": "Missing substitute item for line {line}",
+      "err.line_no_index": "Line {line} has no index_ranges: status change impossible",
+      "err.sub_order_limit": "Too many sub-orders for order {order_id}",
+      "err.onestock_error": "OneStock {path}: {status}",
+      "valid.processing": "Creating the sub-order and updating the lines…",
+      "valid.created": "Sub-order {id} created. {n} line(s) moved to status “{state}”.",
+      "valid.partial": "Sub-order {id} created, but the status of some lines could not be changed:",
+      "valid.line_failed": "Line {line} ({from} → {to}): {error}",
+      "valid.failed": "The substitution failed: {error}",
+      "valid.sub_order": "Sub-order",
+      "btn.retry": "Retry"
     },
     es: {
       "title.popup": "Sustitución de artículos",
@@ -239,7 +275,12 @@
       "error.prefix": "Error: {error}",
       "err.onestock_401": "Token rechazado por OneStock (401): compruebe el token del sitio en la página de configuración (/config.html)",
       "err.token_missing": "No hay token registrado para el sitio {site_id}: indíquelo en la página de configuración (/config.html)",
-      "items.not_eligible": "Sustitución no disponible para el estado «{state}»"
+      "items.not_eligible": "Sustitución no disponible para el estado «{state}»",
+      "valid.processing": "Creando el subpedido y actualizando las líneas…",
+      "valid.created": "Subpedido {id} creado. {n} línea(s) con el estado «{state}».",
+      "valid.partial": "Subpedido {id} creado, pero no se pudo cambiar el estado de algunas líneas:",
+      "valid.failed": "La sustitución ha fallado: {error}",
+      "btn.retry": "Reintentar"
     },
     it: {
       "title.popup": "Sostituzione articoli",
@@ -273,7 +314,12 @@
       "error.prefix": "Errore: {error}",
       "err.onestock_401": "Token rifiutato da OneStock (401): verifica il token del sito nella pagina di configurazione (/config.html)",
       "err.token_missing": "Nessun token registrato per il sito {site_id}: inseriscilo nella pagina di configurazione (/config.html)",
-      "items.not_eligible": "Sostituzione non disponibile per lo stato «{state}»"
+      "items.not_eligible": "Sostituzione non disponibile per lo stato «{state}»",
+      "valid.processing": "Creazione del sotto-ordine e aggiornamento delle righe…",
+      "valid.created": "Sotto-ordine {id} creato. {n} riga/e con lo stato «{state}».",
+      "valid.partial": "Sotto-ordine {id} creato, ma non è stato possibile modificare lo stato di alcune righe:",
+      "valid.failed": "La sostituzione non è riuscita: {error}",
+      "btn.retry": "Riprova"
     },
     de: {
       "title.popup": "Artikelersatz",
@@ -307,7 +353,12 @@
       "error.prefix": "Fehler: {error}",
       "err.onestock_401": "Token von OneStock abgelehnt (401): Prüfen Sie das Token der Site auf der Konfigurationsseite (/config.html)",
       "err.token_missing": "Kein Token für Site {site_id} gespeichert: Tragen Sie es auf der Konfigurationsseite ein (/config.html)",
-      "items.not_eligible": "Ersatz für den Status „{state}“ nicht möglich"
+      "items.not_eligible": "Ersatz für den Status „{state}“ nicht möglich",
+      "valid.processing": "Unterbestellung wird erstellt und Positionen werden aktualisiert…",
+      "valid.created": "Unterbestellung {id} erstellt. {n} Position(en) auf Status „{state}“ gesetzt.",
+      "valid.partial": "Unterbestellung {id} erstellt, aber der Status einiger Positionen konnte nicht geändert werden:",
+      "valid.failed": "Der Ersatz ist fehlgeschlagen: {error}",
+      "btn.retry": "Erneut versuchen"
     }
   };
 

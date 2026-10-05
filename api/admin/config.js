@@ -4,7 +4,7 @@
 // { action: "meta" }                     -> { extension_id, environments, default_env, params }
 // { action: "sites", env }               -> { sites: [{ site_id, updated_at }] }
 // { action: "get", env, site_id }        -> configuration du site
-// { action: "set", env, site_id, params: { api_root?, default_lang?, substitution_states?, token? } }
+// { action: "set", env, site_id, params: { api_root?, default_lang?, substitution_states?, substituted_state?, token? } }
 //   chaque paramètre : { value, scope: "global" | "extension" }
 //   global = valable pour toutes les extensions (extension_id "*"), extension = propre à cette extension.
 //   route / langue / statuts vides : retour à la valeur commune puis par défaut (réenregistrée pour le site) ;
@@ -48,6 +48,11 @@ function normalize(name, raw) {
     if (states === null) throw bad("invalid_states", "Statuts invalides : liste séparée par des virgules (ex. fulfilled, claimed) ou * pour tous");
     return states.join(",");
   }
+  if (name === "substituted_state") {
+    const state = onestock.normalizeState(v);
+    if (state === null) throw bad("invalid_state", "Statut invalide (ex. substituted)");
+    return state;
+  }
   if (name === "token") {
     if (!/^[\w.+/=-]{1,1024}$/.test(v)) throw bad("invalid_token_format", "Format de token invalide");
     return v;
@@ -76,6 +81,7 @@ async function describe(ctx) {
     api_root: field("api_root"),
     default_lang: field("default_lang"),
     substitution_states: field("substitution_states"),
+    substituted_state: field("substituted_state"),
     defaults,
   };
 }

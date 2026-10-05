@@ -118,6 +118,15 @@
         <p class="hint" id="hint-substitution_states"></p>
       </div>
 
+      <div class="param" data-param="substituted_state">
+        <div class="param-head">
+          <label for="p-substituted_state"><span data-i18n="cfg.substituted_state"></span> <span class="source" data-source></span></label>
+          <select data-scope aria-label="Scope"></select>
+        </div>
+        <input id="p-substituted_state" spellcheck="false" placeholder="substituted" style="max-width: 320px">
+        <p class="hint" data-i18n="cfg.substituted_state_hint"></p>
+      </div>
+
       <div class="param" data-param="token">
         <div class="param-head">
           <label for="p-token"><span data-i18n="cfg.token"></span> <span class="source" data-source></span></label>
@@ -152,7 +161,8 @@
 <script>
   (function () {
     var KEY_STORAGE = "onestock_admin_key";
-    var PARAMS = ["api_root", "default_lang", "substitution_states", "token"];
+    var PARAMS = ["api_root", "default_lang", "substitution_states", "substituted_state", "token"];
+    var VALUE_PARAMS = ["api_root", "default_lang", "substitution_states", "substituted_state"];
     var meta = null;
     var current = { env: "", site: "" };
     var lastCfg = null;
@@ -225,9 +235,9 @@
       var where = (cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.common")) + " — " + cfg.environment;
       $("settings-title").textContent = where;
       $("logs-title").textContent = t("logs.title") + " — " + (cfg.site_id ? t("cfg.site", { id: cfg.site_id }) : t("cfg.all_sites")) + " — " + cfg.environment;
-      ["api_root", "default_lang", "substitution_states"].forEach(function (name) {
+      VALUE_PARAMS.forEach(function (name) {
         $("p-" + name).value = cfg[name].value;
-        $("p-" + name).placeholder = cfg.defaults[name];
+        if (cfg.defaults[name]) $("p-" + name).placeholder = cfg.defaults[name];
         paramBox(name).querySelector("[data-scope]").value = cfg[name].scope;
         showSource(name, cfg[name]);
       });
@@ -313,7 +323,7 @@
     $("settings-form").addEventListener("submit", function (e) {
       e.preventDefault();
       var params = {};
-      ["api_root", "default_lang", "substitution_states"].forEach(function (name) {
+      VALUE_PARAMS.forEach(function (name) {
         params[name] = { value: $("p-" + name).value.trim(), scope: paramBox(name).querySelector("[data-scope]").value };
       });
       var token = $("p-token").value.trim();

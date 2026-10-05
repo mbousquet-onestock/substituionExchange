@@ -14,6 +14,7 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".
 const API = {
   "/api/proxy": require("../api/proxy"),
   "/api/settings": require("../api/settings"),
+  "/api/substitutions": require("../api/substitutions"),
   "/api/admin/config": require("../api/admin/config"),
   "/api/admin/logs": require("../api/admin/logs"),
 };
