@@ -101,7 +101,7 @@ extension + site → global + site → extension + commun → global + commun �
 | Route de l'API | `onestock_api_root` | global | qualif : `https://api-qualif.onestock-retail.com`, prod : `https://api.onestock-retail.com` |
 | Langue par défaut (repli des fiches articles) | `default_lang` | global | `fr` (`DEFAULT_LANG`) |
 | Statuts des lignes éligibles à la substitution | `substitution_states` | extension | `*` = tous (`DEFAULT_SUBSTITUTION_STATES`) |
-| Statut des lignes substituées | `substituted_state` | extension | — (obligatoire pour confirmer ; `DEFAULT_SUBSTITUTED_STATE`) |
+| Statut des lignes substituées | `substituted_state` | extension | `substituted` (`DEFAULT_SUBSTITUTED_STATE`) |
 | Token API OneStock | `onestock_token` | global | — |
 
 Dans `/config.html`, chaque paramètre a un sélecteur de portée : **Global (toutes les extensions)** ou
@@ -109,7 +109,8 @@ Dans `/config.html`, chaque paramètre a un sélecteur de portée : **Global (to
 (qui la masquerait) ; une valeur spécifique laisse la valeur globale en place pour les autres extensions.
 La provenance de chaque valeur est affichée (global / spécifique · site / commun, ou par défaut).
 
-La route, la langue et les statuts sont créés automatiquement pour chaque site (première utilisation ou
+La route, la langue, les statuts éligibles et le statut des lignes substituées sont créés automatiquement,
+au niveau commun de l'environnement (`site_id` vide) puis pour chaque site (première utilisation ou
 ouverture dans `/config.html`). Le token n'est stocké que s'il est saisi. Les anciennes lignes sont migrées
 automatiquement : elles deviennent globales, dans l'environnement `ONESTOCK_ENV`.
 
@@ -143,7 +144,7 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 | `EXTENSION_ID` | id de l'extension dans `settings` (défaut `substitution`) |
 | `ONESTOCK_ENV` / `ONESTOCK_ENVIRONMENTS` | environnement par défaut (défaut `qualif`) / environnements acceptés (défaut `qualif,prod`) |
 | `DEFAULT_SUBSTITUTION_STATES` | statuts éligibles si non configurés (défaut `*`) |
-| `DEFAULT_SUBSTITUTED_STATE` | statut des lignes substituées si non configuré (défaut : aucun) |
+| `DEFAULT_SUBSTITUTED_STATE` | statut des lignes substituées si non configuré (défaut `substituted`) |
 | `ADMIN_KEY` | clé d'accès à `/config.html` (**obligatoire sur Vercel**, sinon la page est refusée) |
 | `DEFAULT_LANG` | langue par défaut si non configurée (défaut `fr`) |
 | `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |
