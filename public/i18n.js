@@ -132,7 +132,12 @@
       "err.token_decrypt_failed": "Impossible de déchiffrer onestock_token avec SETTINGS_ENCRYPTION_KEY",
       "diag.order_placeholder": "Commande à tester (ex. CKC-009)",
       "cfg.token_row": "ligne utilisée : extension_id {extension}, site_id {site}",
-      "err.encryption_key_missing": "La variable SETTINGS_ENCRYPTION_KEY n'est pas définie sur le serveur : le token OneStock chiffré ne peut pas être lu. Ajoutez-la dans Vercel (même valeur que l'application Extensions) puis redéployez."
+      "err.encryption_key_missing": "La variable SETTINGS_ENCRYPTION_KEY n'est pas définie sur le serveur : le token OneStock chiffré ne peut pas être lu. Ajoutez-la dans Vercel (même valeur que l'application Extensions) puis redéployez.",
+      "cfg.api_logs": "Journal des appels API",
+      "cfg.api_logs_hint": "on : chaque appel aux API OneStock est enregistré dans la table api_logs (visible ci-dessous). off : aucun enregistrement, chargements plus rapides.",
+      "cfg.on": "on (activé)",
+      "cfg.off": "off (désactivé)",
+      "err.invalid_on_off": "Valeur invalide : on ou off"
     },
     en: {
       "title.popup": "Item substitution",
@@ -261,7 +266,12 @@
       "err.token_decrypt_failed": "Unable to decrypt onestock_token with SETTINGS_ENCRYPTION_KEY",
       "diag.order_placeholder": "Order to test (e.g. CKC-009)",
       "cfg.token_row": "row used: extension_id {extension}, site_id {site}",
-      "err.encryption_key_missing": "SETTINGS_ENCRYPTION_KEY is not set on the server: the encrypted OneStock token cannot be read. Add it in Vercel (same value as the Extensions app) and redeploy."
+      "err.encryption_key_missing": "SETTINGS_ENCRYPTION_KEY is not set on the server: the encrypted OneStock token cannot be read. Add it in Vercel (same value as the Extensions app) and redeploy.",
+      "cfg.api_logs": "API call log",
+      "cfg.api_logs_hint": "on: every OneStock API call is saved in the api_logs table (shown below). off: nothing is saved, faster loading.",
+      "cfg.on": "on (enabled)",
+      "cfg.off": "off (disabled)",
+      "err.invalid_on_off": "Invalid value: on or off"
     },
     es: {
       "title.popup": "Sustitución de artículos",

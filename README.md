@@ -121,6 +121,7 @@ extension + site → global + site → extension + commun → global + commun �
 | Langue par défaut (repli des fiches articles) | `default_lang` | global | `fr` (`DEFAULT_LANG`) |
 | Statuts des lignes éligibles à la substitution | `substitution_states` | extension | `*` = tous (`DEFAULT_SUBSTITUTION_STATES`) |
 | Statut des lignes substituées | `substituted_state` | extension | `substituted` (`DEFAULT_SUBSTITUTED_STATE`) |
+| Journal des appels API (`on` / `off`) | `api_logs` | extension | `on` (`DEFAULT_API_LOGS`) |
 | Token API OneStock | `onestock_token` | global | — |
 
 Dans `/config.html`, chaque paramètre a un sélecteur de portée : **Global (toutes les extensions)** ou
@@ -144,7 +145,17 @@ Environnements acceptés : `ONESTOCK_ENVIRONMENTS` (défaut `qualif,prod`).
 À l'étape **Articles**, seules les lignes dont le statut figure dans `substitution_states` sont sélectionnables ;
 les autres sont grisées avec le motif « Substitution impossible pour le statut … ».
 
-Le journal des appels API (500 derniers) enregistre l'extension, l'environnement et le site.
+Le journal des appels API (500 derniers) enregistre l'extension, l'environnement et le site. Il peut être
+désactivé par site avec le paramètre `api_logs` = `off` (aucune écriture en base, chargements plus rapides).
+
+### Performances
+
+- Schéma : une seule lecture de contrôle par instance ; `CREATE` / `ALTER` uniquement s'il manque une colonne.
+- Paramètres par défaut : une requête par niveau (commun, site) au premier usage d'un site par instance.
+- Lecture des paramètres et du token en parallèle, puis cache de la configuration du site par instance
+  (`SETTINGS_CACHE_SECONDS`, 30 s par défaut ; vidé lors d'un enregistrement dans `/config.html` sur cette instance).
+- Journal : une requête par appel OneStock (purge des anciennes lignes environ une fois sur 20), aucune si `api_logs` = `off`.
+- Pop-up : paramètres du site et commande chargés en parallèle.
 
 ### Lecture du token (partagé entre applicatifs)
 
@@ -200,6 +211,7 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 | `DEFAULT_SUBSTITUTION_STATES` | statuts éligibles si non configurés (défaut `*`) |
 | `DEFAULT_SUBSTITUTED_STATE` | statut des lignes substituées si non configuré (défaut `substituted`) |
 | `SETTINGS_ENCRYPTION_KEY` | clé de chiffrement de `onestock_token` dans `settings` (voir « Token chiffré ») |
+| `DEFAULT_API_LOGS` / `SETTINGS_CACHE_SECONDS` | journal par défaut (`on` / `off`) / durée du cache de configuration (30 s) |
 | `ADMIN_KEY` | clé d'accès à `/config.html` (**obligatoire sur Vercel**, sinon la page est refusée) |
 | `DEFAULT_LANG` | langue par défaut si non configurée (défaut `fr`) |
 | `EXTENSION_SECRET_KEYS` | clés secrètes de l'extension, séparées par des virgules. Si vide, la signature n'est **pas** vérifiée |

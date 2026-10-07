@@ -128,6 +128,18 @@
         <p class="hint" data-i18n="cfg.substituted_state_hint"></p>
       </div>
 
+      <div class="param" data-param="api_logs">
+        <div class="param-head">
+          <label for="p-api_logs"><span data-i18n="cfg.api_logs"></span> <span class="source" data-source></span></label>
+          <select data-scope aria-label="Scope"></select>
+        </div>
+        <select id="p-api_logs" style="max-width: 200px">
+          <option value="on" data-i18n="cfg.on">on</option>
+          <option value="off" data-i18n="cfg.off">off</option>
+        </select>
+        <p class="hint" data-i18n="cfg.api_logs_hint"></p>
+      </div>
+
       <div class="param" data-param="token">
         <div class="param-head">
           <label for="p-token"><span data-i18n="cfg.token"></span> <span class="source" data-source></span></label>
@@ -172,8 +184,8 @@
 <script>
   (function () {
     var KEY_STORAGE = "onestock_admin_key";
-    var PARAMS = ["api_root", "default_lang", "substitution_states", "substituted_state", "token"];
-    var VALUE_PARAMS = ["api_root", "default_lang", "substitution_states", "substituted_state"];
+    var PARAMS = ["api_root", "default_lang", "substitution_states", "substituted_state", "api_logs", "token"];
+    var VALUE_PARAMS = ["api_root", "default_lang", "substitution_states", "substituted_state", "api_logs"];
     var meta = null;
     var current = { env: "", site: "" };
     var lastCfg = null;

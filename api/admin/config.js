@@ -6,7 +6,7 @@
 //   empreinte du token (stocké / déchiffré) et appel test à OneStock avec ce token
 // { action: "sites", env }               -> { sites: [{ site_id, updated_at }] }
 // { action: "get", env, site_id }        -> configuration du site
-// { action: "set", env, site_id, params: { api_root?, default_lang?, substitution_states?, substituted_state?, token? } }
+// { action: "set", env, site_id, params: { api_root?, default_lang?, substitution_states?, substituted_state?, api_logs?, token? } }
 //   chaque paramètre : { value, scope: "global" | "extension" }
 //   global = valable pour toutes les extensions (extension_id "*"), extension = propre à cette extension.
 //   route / langue / statuts vides : retour à la valeur commune puis par défaut (réenregistrée pour le site) ;
@@ -56,6 +56,11 @@ function normalize(name, raw) {
     if (state === null) throw bad("invalid_state", "Statut invalide (ex. substituted)");
     return state;
   }
+  if (name === "api_logs") {
+    const v2 = onestock.normalizeOnOff(v);
+    if (v2 === null) throw bad("invalid_on_off", "Valeur invalide : on ou off");
+    return v2;
+  }
   if (name === "token") {
     if (!/^[\w.+/=-]{1,1024}$/.test(v)) throw bad("invalid_token_format", "Format de token invalide");
     return secret.encrypt(v); // chiffré avec SETTINGS_ENCRYPTION_KEY si elle est définie
@@ -95,6 +100,7 @@ async function describe(ctx) {
     default_lang: field("default_lang"),
     substitution_states: field("substitution_states"),
     substituted_state: field("substituted_state"),
+    api_logs: field("api_logs"),
     defaults,
   };
 }
@@ -156,6 +162,7 @@ module.exports = adminEndpoint(async (req) => {
       changes[name] = { value: normalize(name, p.value), scope: p.scope };
     });
     await db.setSettings(ctx, changes);
+    onestock.clearConfigCache();
   }
   return { data: await describe(ctx) };
 });

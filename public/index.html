@@ -327,8 +327,11 @@
         });
       }
 
+      // Paramètres du site (langue par défaut, statuts éligibles) : chargés en parallèle de la commande
+      var settingsReady = Promise.resolve();
+
       function loadOrder(id) {
-        return getOrder(id)
+        return Promise.all([getOrder(id), settingsReady]).then(function (r) { return r[0]; })
           .then(function (order) {
             var ids = (order.line_item_groups || []).concat(order.order_items || []).map(function (x) { return x.item_id; });
             // Une fiche article indisponible n'empêche pas d'afficher la commande
@@ -744,10 +747,11 @@
         var raw = shared.order_id || shared.order_ids || params.get("order_id") || params.get("order_ids");
         orderIds = (Array.isArray(raw) ? raw : String(raw || "").split(",")).map(function (s) { return String(s).trim(); }).filter(Boolean);
         // Langue par défaut du site, puis chargement des articles
-        get("api/settings", {}).then(function (cfg) {
+        settingsReady = get("api/settings", {}).then(function (cfg) {
           if (cfg && cfg.default_lang) FALLBACK_LANG = cfg.default_lang;
           if (cfg && Array.isArray(cfg.substitution_states)) SUBSTITUTION_STATES = cfg.substitution_states;
-        }, function () {}).then(loadItems);
+        }, function () {});
+        loadItems();
       });
 
       // Une substitution a-t-elle abouti (sous-commande créée) ?
