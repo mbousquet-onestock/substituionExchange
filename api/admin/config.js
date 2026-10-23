@@ -17,6 +17,7 @@ const { adminEndpoint } = require("../../lib/http");
 const db = require("../../lib/db");
 const onestock = require("../../lib/onestock");
 const secret = require("../../lib/secret");
+const settingsApi = require("../../lib/settings-api");
 
 function preview(token) {
   return token.length > 8 ? `${token.slice(0, 4)}…${token.slice(-4)}` : "****";
@@ -102,6 +103,7 @@ async function describe(ctx) {
     substituted_state: field("substituted_state"),
     api_logs: field("api_logs"),
     defaults,
+    token_source: settingsApi.enabled() ? "settings_api" : "database",
   };
 }
 
@@ -120,24 +122,27 @@ module.exports = adminEndpoint(async (req) => {
     let seed = { ok: true };
     let token = null;
     try {
+      onestock.clearConfigCache();
       const cfg = await onestock.siteConfig(ctx.site_id, ctx.environment);
-      if (cfg.token_stored) {
-        token = { found: true, row: cfg.raw.token && cfg.raw.token.row, stored: secret.fingerprint(cfg.token_stored) };
+      // Lecture réelle du token (API Settings si configurée, sinon base + SETTINGS_ENCRYPTION_KEY)
+      let value = null;
+      try {
+        value = await onestock.resolveToken(cfg);
+        token = { found: !!value, ...cfg.token_source, decrypted: !!value, value: value ? secret.fingerprint(value) : undefined };
+      } catch (e) {
+        token = { found: null, source: settingsApi.enabled() ? "settings_api" : "database", decrypted: false, error: e.message };
+      }
+      if (cfg.token_stored && !settingsApi.enabled()) token.stored = secret.fingerprint(cfg.token_stored);
+      // Appel test à OneStock avec ce token (commande donnée, sinon une fiche article)
+      if (value && ctx.site_id) {
+        const path = req.order_id ? `/v3/orders/${encodeURIComponent(String(req.order_id).trim())}` : "/v2/items";
+        const body = req.order_id ? { fields: ["id", "state"] } : { get_total: false, pagination: { start: 0, limit: 1 } };
         try {
-          const d = secret.decrypt(cfg.token_stored);
-          token = { ...token, encrypted: !!d.format, format: d.format, decrypted: true, value: secret.fingerprint(d.value) };
-        } catch (e) { token = { ...token, decrypted: false, error: e.message }; }
-        // Appel test à OneStock avec ce token (commande donnée, sinon une fiche article)
-        if (token.decrypted && ctx.site_id) {
-          const path = req.order_id ? `/v3/orders/${encodeURIComponent(String(req.order_id).trim())}` : "/v2/items";
-          const body = req.order_id ? { fields: ["id", "state"] } : { get_total: false, pagination: { start: 0, limit: 1 } };
-          try {
-            const r = await onestock.call({ method: "GET", path, body, siteId: ctx.site_id, env: ctx.environment });
-            token.test = { request: `GET ${cfg.api_root}${path}`, site_id: ctx.site_id, status: r.status,
-              ok: r.status >= 200 && r.status < 300, response: r.status >= 300 ? r.data : "OK" };
-          } catch (e) { token.test = { request: `GET ${cfg.api_root}${path}`, error: e.message }; }
-        }
-      } else token = { found: false };
+          const r = await onestock.call({ method: "GET", path, body, siteId: ctx.site_id, env: ctx.environment });
+          token.test = { request: `GET ${cfg.api_root}${path}`, site_id: ctx.site_id, status: r.status,
+            ok: r.status >= 200 && r.status < 300, response: r.status >= 300 ? r.data : "OK" };
+        } catch (e) { token.test = { request: `GET ${cfg.api_root}${path}`, error: e.message }; }
+      }
     } catch (e) { token = { error: e.message }; }
     try { await onestock.ensureSiteDefaults(ctx, true); } catch (e) { seed = { ok: false, error: e.message }; }
     return { data: {
@@ -149,7 +154,7 @@ module.exports = adminEndpoint(async (req) => {
       },
       context: ctx,
       seed,
-      token: { ...token, encryption_key_set: secret.enabled() },
+      token: { ...token, encryption_key_set: secret.enabled(), settings_api: settingsApi.enabled() ? process.env.SETTINGS_API_URL : null },
       ...(await db.diagnostic(ctx)),
     } };
   }

@@ -137,7 +137,8 @@
       "cfg.api_logs_hint": "on : chaque appel aux API OneStock est enregistré dans la table api_logs (visible ci-dessous). off : aucun enregistrement, chargements plus rapides.",
       "cfg.on": "on (activé)",
       "cfg.off": "off (désactivé)",
-      "err.invalid_on_off": "Valeur invalide : on ou off"
+      "err.invalid_on_off": "Valeur invalide : on ou off",
+      "cfg.token_via_api": "Token lu via l'API Settings de l'application Extensions (SETTINGS_API_URL) : il se gère dans l'application Extensions. Le diagnostic ci-dessous vérifie la lecture et teste le token."
     },
     en: {
       "title.popup": "Item substitution",
@@ -271,7 +272,8 @@
       "cfg.api_logs_hint": "on: every OneStock API call is saved in the api_logs table (shown below). off: nothing is saved, faster loading.",
       "cfg.on": "on (enabled)",
       "cfg.off": "off (disabled)",
-      "err.invalid_on_off": "Invalid value: on or off"
+      "err.invalid_on_off": "Invalid value: on or off",
+      "cfg.token_via_api": "Token read through the Extensions app Settings API (SETTINGS_API_URL): manage it in the Extensions app. The diagnostics below check the read and test the token."
     },
     es: {
       "title.popup": "Sustitución de artículos",

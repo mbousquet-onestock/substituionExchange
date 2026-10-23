@@ -157,6 +157,22 @@ désactivé par site avec le paramètre `api_logs` = `off` (aucune écriture en 
 - Journal : une requête par appel OneStock (purge des anciennes lignes environ une fois sur 20), aucune si `api_logs` = `off`.
 - Pop-up : paramètres du site et commande chargés en parallèle.
 
+### Lecture du token via l'API Settings (recommandé)
+
+Si `SETTINGS_API_URL` et `SETTINGS_API_KEY` sont définies, le token est lu par l'**API Settings** de
+l'application Extensions (`lib/settings-api.js`), comme dans sa documentation :
+
+```
+GET {SETTINGS_API_URL}/item?key=onestock_token&site_id={site}&extension_id=*&environment={env}&decrypt=1
+Authorization: Bearer {SETTINGS_API_KEY}
+```
+
+valeur du site d'abord, puis valeur globale (`site_id` vide). La valeur est déjà déchiffrée par l'application
+Extensions : `SETTINGS_ENCRYPTION_KEY` n'est alors pas nécessaire pour le token. Le token reste côté serveur,
+n'est pas journalisé et est mis en cache avec la configuration du site (`SETTINGS_CACHE_SECONDS`).
+Sans ces variables, la lecture directe en base ci-dessous est utilisée. Le diagnostic de `/config.html` indique la
+source (`settings_api` / `database`), la ligne utilisée et teste le token sur OneStock.
+
 ### Lecture du token (partagé entre applicatifs)
 
 Le token est lu comme dans les autres applicatifs utilisant la table, **toutes extensions confondues** :
@@ -210,6 +226,7 @@ Les tables `settings` et `api_logs` sont créées au premier appel.
 | `ONESTOCK_ENV` / `ONESTOCK_ENVIRONMENTS` | environnement par défaut (défaut `qualif`) / environnements acceptés (défaut `qualif,prod`) |
 | `DEFAULT_SUBSTITUTION_STATES` | statuts éligibles si non configurés (défaut `*`) |
 | `DEFAULT_SUBSTITUTED_STATE` | statut des lignes substituées si non configuré (défaut `substituted`) |
+| `SETTINGS_API_URL` / `SETTINGS_API_KEY` | API Settings de l'application Extensions (ex. `https://extensions-lemon.vercel.app/api/settings`) et clé d'API : lecture du token par l'API |
 | `SETTINGS_ENCRYPTION_KEY` | clé de chiffrement de `onestock_token` dans `settings` (voir « Token chiffré ») |
 | `DEFAULT_API_LOGS` / `SETTINGS_CACHE_SECONDS` | journal par défaut (`on` / `off`) / durée du cache de configuration (30 s) |
 | `ADMIN_KEY` | clé d'accès à `/config.html` (**obligatoire sur Vercel**, sinon la page est refusée) |
